@@ -30,6 +30,7 @@ namespace JmesPathWpfDemo.ViewModels
 		private JsonTreeNode _currentSelectedNode;
 		private string _currentView = "JsonQuery";
 		private QueryStoreViewModel _queryStoreViewModel;
+		private FunctionReferenceViewModel _functionReferenceViewModel;
 		private ObservableCollection<JsonQueryTabViewModel> _jsonQueryTabs;
 		private JsonQueryTabViewModel _selectedJsonQueryTab;
 
@@ -49,6 +50,9 @@ namespace JmesPathWpfDemo.ViewModels
 			
 			// Initialize Query Store ViewModel
 			_queryStoreViewModel = new QueryStoreViewModel(OnQueryLoadedFromStore);
+			
+			// Initialize Function Reference ViewModel
+			_functionReferenceViewModel = new FunctionReferenceViewModel(OnTryExample);
             
 			// Load from file if exists, otherwise fallback to empty object
 			try
@@ -161,6 +165,16 @@ namespace JmesPathWpfDemo.ViewModels
 			}
 		}
 
+		public FunctionReferenceViewModel FunctionReferenceViewModel
+		{
+			get => _functionReferenceViewModel;
+			set
+			{
+				_functionReferenceViewModel = value;
+				NotifyOfPropertyChange(() => FunctionReferenceViewModel);
+			}
+		}
+
 		public ObservableCollection<JsonQueryTabViewModel> JsonQueryTabs
 		{
 			get => _jsonQueryTabs;
@@ -190,6 +204,7 @@ namespace JmesPathWpfDemo.ViewModels
 				NotifyOfPropertyChange(() => CurrentView);
 				NotifyOfPropertyChange(() => JsonQueryViewVisibility);
 				NotifyOfPropertyChange(() => QueryStoreViewVisibility);
+				NotifyOfPropertyChange(() => FunctionReferenceViewVisibility);
 			}
 		}
 
@@ -198,6 +213,9 @@ namespace JmesPathWpfDemo.ViewModels
 		
 		public Visibility QueryStoreViewVisibility => 
 			CurrentView == "QueryStore" ? Visibility.Visible : Visibility.Collapsed;
+		
+		public Visibility FunctionReferenceViewVisibility => 
+			CurrentView == "FunctionReference" ? Visibility.Visible : Visibility.Collapsed;
 
 		public void ShowJsonQuery()
 		{
@@ -209,6 +227,11 @@ namespace JmesPathWpfDemo.ViewModels
 			CurrentView = "QueryStore";
 		}
 
+		public void ShowFunctionReference()
+		{
+			CurrentView = "FunctionReference";
+		}
+
 		private void OnQueryLoadedFromStore(string queryExpression)
 		{
 			// Load query into current selected tab
@@ -218,6 +241,32 @@ namespace JmesPathWpfDemo.ViewModels
 			}
 			// Switch back to JSON Query view
 			CurrentView = "JsonQuery";
+		}
+
+		private void OnTryExample(string jsonData, string query)
+		{
+			try
+			{
+				// Create a new tab with the example data
+				var exampleTab = new JsonQueryTabViewModel("Example", jsonData, canClose: true, OnCreateNewTab);
+				exampleTab.Query = query;
+				
+				_jsonQueryTabs.Add(exampleTab);
+				SelectedJsonQueryTab = exampleTab;
+				
+				// Switch to JSON Query view
+				CurrentView = "JsonQuery";
+				
+				// Auto-execute the query
+				exampleTab.Execute();
+				
+				System.Diagnostics.Debug.WriteLine($"Created example tab with query: {query}");
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Error trying example: {ex.Message}", "Error",
+					MessageBoxButton.OK, MessageBoxImage.Error);
+			}
 		}
 
 		private void OnCreateNewTab(string title, string json)

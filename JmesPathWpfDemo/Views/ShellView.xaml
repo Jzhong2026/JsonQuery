@@ -167,7 +167,7 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
             <Button Content="Query Store" 
                     Width="120" 
                     Height="35"
-                    Margin="5,0,0,0"
+                    Margin="5,0,5,0"
                     FontSize="14"
                     FontWeight="Bold"
                     BorderThickness="0"
@@ -179,6 +179,31 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
                         <Setter Property="Foreground" Value="White"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="QueryStore">
+                                <Setter Property="Background" Value="#005A9E"/>
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#106EBE"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <Button Content="Function Reference" 
+                    Width="140" 
+                    Height="35"
+                    Margin="5,0,0,0"
+                    FontSize="14"
+                    FontWeight="Bold"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    cal:Message.Attach="ShowFunctionReference">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#0078D4"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="FunctionReference">
                                 <Setter Property="Background" Value="#005A9E"/>
                             </DataTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -272,6 +297,11 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
         <!-- Query Store View -->
         <Grid Grid.Row="1" Grid.RowSpan="6" Visibility="{Binding QueryStoreViewVisibility}">
             <ContentControl cal:View.Model="{Binding QueryStoreViewModel}"/>
+        </Grid>
+
+        <!-- Function Reference View -->
+        <Grid Grid.Row="1" Grid.RowSpan="6" Visibility="{Binding FunctionReferenceViewVisibility}">
+            <ContentControl cal:View.Model="{Binding FunctionReferenceViewModel}"/>
         </Grid>
     </Grid>
 </Window>

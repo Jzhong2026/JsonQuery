@@ -378,14 +378,19 @@ namespace JmesPathWpfDemo.ViewModels
                 }
             }
 
-            // Auto-configure iff function for expression building
-            if (SelectedFunction.Name == "iff" && Parameters.Count >= 1)
+            // Auto-configure iff function - only first parameter (condition) should be ExpressionBuilder
+            if (SelectedFunction.Name == "iff" && Parameters.Count >= 3)
             {
+                // Parameter 1: condition - use ExpressionBuilder
                 Parameters[0].Type = ParameterType.ExpressionBuilder;
                 if (_currentTabFields.Any())
                 {
                     Parameters[0].ExpressionField = _currentTabFields.First();
                 }
+                
+                // Parameter 2 & 3: true_value and false_value - use StaticString
+                Parameters[1].Type = ParameterType.StaticString;
+                Parameters[2].Type = ParameterType.StaticString;
             }
         }
 

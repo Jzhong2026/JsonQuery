@@ -375,13 +375,85 @@ namespace JmesPathWpfDemo.ViewModels
 
         public async void BuildComplexQuery()
         {
-            var vm = new ComplexQueryBuilderViewModel(_queryStoreViewModel.SavedQueries);
+            // Get fields from current tab's JSON
+            List<string> currentTabFields = new List<string>();
+            if (_selectedJsonQueryTab != null)
+            {
+                try
+                {
+                    currentTabFields = ExtractFieldsFromJson(_selectedJsonQueryTab.JsonInput);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error extracting fields: {ex.Message}");
+                }
+            }
+
+            var vm = new ComplexQueryBuilderViewModel(_queryStoreViewModel.SavedQueries, currentTabFields);
             var windowManager = new WindowManager();
             var result = await windowManager.ShowDialogAsync(vm);
 
             if (result == true && !string.IsNullOrEmpty(vm.ResultQuery) && _selectedJsonQueryTab != null)
             {
                 _selectedJsonQueryTab.Query = vm.ResultQuery;
+            }
+        }
+
+        private List<string> ExtractFieldsFromJson(string json)
+        {
+            var fields = new List<string>();
+            
+            try
+            {
+                var token = JToken.Parse(json);
+                ExtractFieldsRecursive(token, "", fields);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error parsing JSON for fields: {ex.Message}");
+            }
+
+            return fields;
+        }
+
+        private void ExtractFieldsRecursive(JToken token, string path, List<string> fields, int maxDepth = 3, int currentDepth = 0)
+        {
+            if (currentDepth >= maxDepth) return;
+
+            if (token is JObject obj)
+            {
+                foreach (var property in obj.Properties())
+                {
+                    var newPath = string.IsNullOrEmpty(path) ? property.Name : $"{path}.{property.Name}";
+                    
+                    // Add this path
+                    if (!fields.Contains(newPath))
+                    {
+                        fields.Add(newPath);
+                    }
+
+                    // Recurse into nested structures
+                    ExtractFieldsRecursive(property.Value, newPath, fields, maxDepth, currentDepth + 1);
+                }
+            }
+            else if (token is JArray array && array.Count > 0)
+            {
+                // For arrays, explore first item to get structure
+                var arrayPath = path + "[*]";
+                var firstItem = array.First;
+                
+                if (firstItem is JObject)
+                {
+                    ExtractFieldsRecursive(firstItem, arrayPath, fields, maxDepth, currentDepth + 1);
+                }
+                else
+                {
+                    // Simple array of primitives
+                    if (!fields.Contains(arrayPath))
+                    {
+                        fields.Add(arrayPath);
+                    }
+                }
             }
         }
 

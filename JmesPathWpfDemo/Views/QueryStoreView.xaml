@@ -1,0 +1,60 @@
+<UserControl x:Class="JmesPathWpfDemo.Views.QueryStoreView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cal="http://caliburnmicro.com">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Grid.Row="0" 
+                   Text="Double-click to load query:" 
+                   Margin="5"
+                   FontSize="14"
+                   FontWeight="SemiBold"/>
+        
+        <DataGrid Grid.Row="1" 
+                  ItemsSource="{Binding SavedQueries}"
+                  AutoGenerateColumns="False" 
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  Background="#F5F5F5"
+                  BorderBrush="#CCCCCC"
+                  BorderThickness="1"
+                  Margin="5">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="cal:Message.Attach" 
+                            Value="[Event MouseDoubleClick] = [Action LoadQuery($dataContext)]"/>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" 
+                                    Binding="{Binding Name}" 
+                                    Width="150"/>
+                <DataGridTextColumn Header="Expression" 
+                                    Binding="{Binding Expression}" 
+                                    Width="300"/>
+                <DataGridTextColumn Header="Description" 
+                                    Binding="{Binding Description}" 
+                                    Width="*"/>
+                <DataGridTemplateColumn Header="Actions" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Use" 
+                                        Padding="10,2"
+                                        Margin="0,0,5,0"
+                                        cal:Message.Attach="LoadQuery($dataContext)"/>
+                                <Button Content="Delete" 
+                                        Padding="5,2"
+                                        cal:Message.Attach="DeleteQuery($dataContext)"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

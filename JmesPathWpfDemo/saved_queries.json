@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "All Fields",
+    "Description": "Selects all user defined fields",
+    "Expression": "UserDefinedFields"
+  },
+  {
+    "Name": "High Priority",
+    "Description": "Filters for high priority items",
+    "Expression": "[?Priority == 'High']"
+  },
+  {
+    "Name": "Radio Log Report",
+    "Description": "Formats radio logs with joined fields and status check",
+    "Expression": "PublicSafetyEnvelope.PublicSafety.Response.CADMasterCallTable.MainRadioLogTable[*].{Log: concat_ws(' - ', UnitNumber, TenCode), IsComplete: iff(eq(TenCode, 'CMPLT'), 'Yes', 'No')}"
+  }
+]

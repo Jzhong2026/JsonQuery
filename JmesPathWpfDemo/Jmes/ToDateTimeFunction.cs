@@ -23,11 +23,35 @@ namespace JmesPathWpfDemo.Jmes
 				return JValue.CreateNull();
 			}
 
-			var dateString = ExtractStringValue(args[0]);
-			var format = args.Length > 1 ? ExtractStringValue(args[1]) : null;
-			var fromTimezone = args.Length > 2 ? ExtractStringValue(args[2]) : "UTC";
-			var toTimezone = args.Length > 3 ? ExtractStringValue(args[3]) : null;
+			// Handle array input - process each element
+			if (args[0].Token is JArray arrayInput)
+			{
+				var resultArray = new JArray();
+				var format = args.Length > 1 ? ExtractStringValue(args[1]) : null;
+				var fromTimezone = args.Length > 2 ? ExtractStringValue(args[2]) : "UTC";
+				var toTimezone = args.Length > 3 ? ExtractStringValue(args[3]) : null;
 
+				foreach (var item in arrayInput)
+				{
+					var dateString = ExtractStringValueFromToken(item);
+					var converted = ConvertSingleDateTime(dateString, format, fromTimezone, toTimezone);
+					resultArray.Add(converted);
+				}
+
+				return resultArray;
+			}
+
+			// Handle single value input
+			var singleDateString = ExtractStringValue(args[0]);
+			var singleFormat = args.Length > 1 ? ExtractStringValue(args[1]) : null;
+			var singleFromTimezone = args.Length > 2 ? ExtractStringValue(args[2]) : "UTC";
+			var singleToTimezone = args.Length > 3 ? ExtractStringValue(args[3]) : null;
+
+			return ConvertSingleDateTime(singleDateString, singleFormat, singleFromTimezone, singleToTimezone);
+		}
+
+		private JToken ConvertSingleDateTime(string dateString, string format, string fromTimezone, string toTimezone)
+		{
 			if (string.IsNullOrWhiteSpace(dateString))
 			{
 				return JValue.CreateNull();
@@ -65,9 +89,8 @@ namespace JmesPathWpfDemo.Jmes
 					convertedDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, targetTimeZone);
 				}
 
-				var offset = targetTimeZone.GetUtcOffset(convertedDateTime);
-				var dto = new DateTimeOffset(convertedDateTime, offset);
-				return new JValue(dto.ToString("yyyy-MM-dd HH:mm:ss.ffffzzz"));
+				// Return simple format without timezone offset
+				return new JValue(convertedDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
 			}
 			catch (Exception)
 			{
@@ -78,6 +101,11 @@ namespace JmesPathWpfDemo.Jmes
 		private string ExtractStringValue(JmesPathFunctionArgument arg)
 		{
 			var token = arg.Token;
+			return ExtractStringValueFromToken(token);
+		}
+
+		private string ExtractStringValueFromToken(JToken token)
+		{
 			if (token == null || token.Type == JTokenType.Null)
 			{
 				return null;

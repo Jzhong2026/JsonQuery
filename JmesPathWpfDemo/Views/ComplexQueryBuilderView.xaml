@@ -102,6 +102,44 @@
                                                    VerticalAlignment="Center" 
                                                    Foreground="Gray"
                                                    Visibility="{Binding IsSpaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                                        <!-- Tree Path Input -->
+                                        <TextBox Visibility="{Binding IsTreePathVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                 VerticalContentAlignment="Center"
+                                                 ToolTip="Enter a JMESPath expression (e.g. UserDefinedFields[*].Attributes)">
+                                            <TextBox.Text>
+                                                <Binding Path="StaticValue" UpdateSourceTrigger="PropertyChanged"/>
+                                            </TextBox.Text>
+                                        </TextBox>
+
+                                        <!-- Array Expression Input -->
+                                        <TextBox Visibility="{Binding IsArrayExpressionVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                 VerticalContentAlignment="Center"
+                                                 ToolTip="Enter an array expression (e.g. [1, 2, 3])">
+                                            <TextBox.Text>
+                                                <Binding Path="StaticValue" UpdateSourceTrigger="PropertyChanged"/>
+                                            </TextBox.Text>
+                                        </TextBox>
+
+                                        <!-- Separator Input -->
+                                        <Grid Visibility="{Binding IsSeparatorVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox VerticalContentAlignment="Center" 
+                                                     ToolTip="Enter separator">
+                                                <TextBox.Text>
+                                                    <Binding Path="StaticValue" UpdateSourceTrigger="PropertyChanged"/>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="5,0,0,0">
+                                                <Button Content="," Width="25" Margin="0,0,2,0" ToolTip="Comma (, )" cal:Message.Attach="SetStaticValue(', ')"/>
+                                                <Button Content=" " Width="25" Margin="0,0,2,0" ToolTip="Space ( )" cal:Message.Attach="SetStaticValue(' ')"/>
+                                                <Button Content="\n" Width="25" Margin="0,0,2,0" ToolTip="New Line (\n)" cal:Message.Attach="SetStaticValue('\n')"/>
+                                                <Button Content="|" Width="25" Margin="0,0,2,0" ToolTip="Pipe (|)" cal:Message.Attach="SetStaticValue('|')"/>
+                                            </StackPanel>
+                                        </Grid>
                                     </Grid>
                                     
                                     <!-- Remove Button (only if variadic) -->

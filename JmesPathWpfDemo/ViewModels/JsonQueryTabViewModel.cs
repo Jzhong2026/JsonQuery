@@ -46,6 +46,8 @@ namespace JmesPathWpfDemo.ViewModels
             _engine.FunctionRepository.Register<NewLineFunction>();
             _engine.FunctionRepository.Register<IffFunction>();
             _engine.FunctionRepository.Register<EqualFunction>();
+            _engine.FunctionRepository.Register<MergeArraysFunction>();
+            _engine.FunctionRepository.Register<FlattenFunction>();
 
             _jsonTreeNodes = new ObservableCollection<JsonTreeNode>();
             _query = "";

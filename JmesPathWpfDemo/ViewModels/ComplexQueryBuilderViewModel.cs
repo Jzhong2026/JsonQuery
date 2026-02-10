@@ -12,7 +12,10 @@ namespace JmesPathWpfDemo.ViewModels
         Number,
         SavedQuery,
         NewLine,
-        Space
+        Space,
+        TreePath,
+        ArrayExpression,
+        Separator
     }
 
     public class QueryParameterViewModel : PropertyChangedBase
@@ -42,6 +45,9 @@ namespace JmesPathWpfDemo.ViewModels
                 NotifyOfPropertyChange(() => IsSavedQueryVisible);
                 NotifyOfPropertyChange(() => IsNewLineVisible);
                 NotifyOfPropertyChange(() => IsSpaceVisible);
+                NotifyOfPropertyChange(() => IsTreePathVisible);
+                NotifyOfPropertyChange(() => IsArrayExpressionVisible);
+                NotifyOfPropertyChange(() => IsSeparatorVisible);
                 Parent?.NotifyQueryChange();
             }
         }
@@ -55,6 +61,11 @@ namespace JmesPathWpfDemo.ViewModels
                 NotifyOfPropertyChange(() => StaticValue);
                 Parent?.NotifyQueryChange();
             }
+        }
+
+        public void SetStaticValue(string value)
+        {
+            StaticValue = value;
         }
 
         public SavedQuery SelectedSavedQuery
@@ -75,6 +86,9 @@ namespace JmesPathWpfDemo.ViewModels
         public bool IsSavedQueryVisible => Type == ParameterType.SavedQuery;
         public bool IsNewLineVisible => Type == ParameterType.NewLine;
         public bool IsSpaceVisible => Type == ParameterType.Space;
+        public bool IsTreePathVisible => Type == ParameterType.TreePath;
+        public bool IsArrayExpressionVisible => Type == ParameterType.ArrayExpression;
+        public bool IsSeparatorVisible => Type == ParameterType.Separator;
 
         public ComplexQueryBuilderViewModel Parent { get; set; }
 
@@ -94,6 +108,15 @@ namespace JmesPathWpfDemo.ViewModels
                     return "newline()";
                 case ParameterType.Space:
                     return "' '";
+                case ParameterType.TreePath:
+                    // Return raw path expression (e.g., UserDefinedFields[*].Attributes)
+                    return string.IsNullOrWhiteSpace(StaticValue) ? "@" : StaticValue.Trim();
+                case ParameterType.ArrayExpression:
+                    // Return raw array expression
+                    return string.IsNullOrWhiteSpace(StaticValue) ? "[]" : StaticValue.Trim();
+                case ParameterType.Separator:
+                    // Return string literal for separator
+                    return $"'{StaticValue?.Replace("'", "\\'")}'";
                 default:
                     return "null";
             }
@@ -123,6 +146,10 @@ namespace JmesPathWpfDemo.ViewModels
             _functions = new ObservableCollection<FunctionDefinition>
             {
                 new FunctionDefinition { Name = "concat", IsVariadic = true },
+                new FunctionDefinition { Name = "concat_ws", IsVariadic = true },
+                new FunctionDefinition { Name = "merge_arrays", IsVariadic = true },
+                new FunctionDefinition { Name = "flatten", IsVariadic = false, ParameterCount = 1 },
+                new FunctionDefinition { Name = "join", IsVariadic = false, ParameterCount = 2 },
                 new FunctionDefinition { Name = "to_string", IsVariadic = false, ParameterCount = 1 },
                 new FunctionDefinition { Name = "to_number", IsVariadic = false, ParameterCount = 1 },
                 new FunctionDefinition { Name = "length", IsVariadic = false, ParameterCount = 1 },
@@ -194,6 +221,16 @@ namespace JmesPathWpfDemo.ViewModels
                 for (int i = 0; i < SelectedFunction.ParameterCount; i++)
                 {
                     AddParameter();
+                }
+            }
+
+            // Auto-configure separator for join and concat_ws
+            if (SelectedFunction.Name == "join" || SelectedFunction.Name == "concat_ws")
+            {
+                if (Parameters.Count > 0)
+                {
+                    Parameters[0].Type = ParameterType.Separator;
+                    Parameters[0].StaticValue = ", "; // Default separator
                 }
             }
         }

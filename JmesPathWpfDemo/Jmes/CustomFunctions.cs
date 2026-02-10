@@ -114,4 +114,67 @@ namespace JmesPathWpfDemo.Jmes
             return JToken.FromObject(JToken.DeepEquals(left, right));
         }
     }
+
+    public sealed class MergeArraysFunction : JmesPathFunction
+    {
+        public MergeArraysFunction() : base("merge_arrays", 1, true)
+        {
+        }
+
+        public override JToken Execute(params JmesPathFunctionArgument[] args)
+        {
+            var result = new JArray();
+            
+            foreach (var arg in args)
+            {
+                if (arg.Token is JArray arr)
+                {
+                    foreach (var item in arr)
+                    {
+                        result.Add(item);
+                    }
+                }
+                else if (arg.Token != null && arg.Token.Type != JTokenType.Null)
+                {
+                    result.Add(arg.Token);
+                }
+            }
+
+            return result;
+        }
+    }
+
+    public sealed class FlattenFunction : JmesPathFunction
+    {
+        public FlattenFunction() : base("flatten", 1)
+        {
+        }
+
+        public override JToken Execute(params JmesPathFunctionArgument[] args)
+        {
+            var result = new JArray();
+            
+            if (args[0].Token is JArray arr)
+            {
+                FlattenRecursive(arr, result);
+            }
+
+            return result;
+        }
+
+        private void FlattenRecursive(JArray source, JArray target)
+        {
+            foreach (var item in source)
+            {
+                if (item is JArray nestedArray)
+                {
+                    FlattenRecursive(nestedArray, target);
+                }
+                else
+                {
+                    target.Add(item);
+                }
+            }
+        }
+    }
 }

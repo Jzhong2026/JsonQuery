@@ -41,6 +41,8 @@ namespace JmesPathWpfDemo.ViewModels
             _engine.FunctionRepository.Register<NewLineFunction>();
             _engine.FunctionRepository.Register<IffFunction>();
             _engine.FunctionRepository.Register<EqualFunction>();
+            _engine.FunctionRepository.Register<MergeArraysFunction>();
+            _engine.FunctionRepository.Register<FlattenFunction>();
 
 			// Initialize collections first
 			_jsonTreeNodes = new ObservableCollection<JsonTreeNode>();
@@ -416,7 +418,7 @@ namespace JmesPathWpfDemo.ViewModels
 				}
 			}
 
-			var dialog = new JoinQueryDialog(properties);
+			var dialog = new JoinQueryDialog(properties, _queryStoreViewModel.SavedQueries.ToList());
 			dialog.Owner = Application.Current.MainWindow;
 
 			if (dialog.ShowDialog() == true)
@@ -425,21 +427,24 @@ namespace JmesPathWpfDemo.ViewModels
 				var property = dialog.SelectedProperty;
 				var sortedPath = GetSortedPath(node);
 
-				if (!string.IsNullOrEmpty(property))
+				// If using pipeline with saved query
+				if (dialog.UsePipeline && dialog.SelectedSavedQuery != null)
 				{
-					// For array of objects: join(', ', Path[*].Property)
-					// Note: node.Path points to the array, e.g. "UserDefinedFields[0].Attributes"
-					// We need to add [*].Name
-					// Actually JMESPath projection for array is [*]
-					
-					// Construct path for projection
-					// If node.Path is "Attributes", we want "join(', ', Attributes[*].Name)"
-					
+					if (!string.IsNullOrEmpty(property))
+					{
+						Query = $"({dialog.SelectedSavedQuery.Expression}) | join('{separator}', {sortedPath}[*].{property})";
+					}
+					else
+					{
+						Query = $"({dialog.SelectedSavedQuery.Expression}) | join('{separator}', {sortedPath})";
+					}
+				}
+				else if (!string.IsNullOrEmpty(property))
+				{
 					Query = $"join('{separator}', {sortedPath}[*].{property})";
 				}
 				else
 				{
-					// For array of primitives: join(', ', Path)
 					Query = $"join('{separator}', {sortedPath})";
 				}
 			}

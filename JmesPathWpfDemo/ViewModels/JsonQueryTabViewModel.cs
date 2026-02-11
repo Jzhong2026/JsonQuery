@@ -106,6 +106,27 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 _result = value;
                 NotifyOfPropertyChange(() => Result);
+                NotifyOfPropertyChange(() => HasValidResult);
+            }
+        }
+
+        public bool HasValidResult
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_result) || _result == "null")
+                    return false;
+
+                try
+                {
+                    // Try to parse as JSON to verify it's valid
+                    JToken.Parse(_result);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
 

@@ -280,16 +280,42 @@
                                     
                                     <!-- Remove Button (only if variadic) -->
                                     <Button Grid.Column="2" 
-                                            Content="?" 
+                                            Content="X" 
                                             Width="28" 
                                             Height="28" 
                                             Margin="8,0,0,0"
-                                            FontSize="16"
+                                            FontSize="14"
+                                            FontWeight="Bold"
                                             Background="#FFCCCC"
+                                            Foreground="#CC0000"
                                             BorderThickness="0"
                                             Visibility="{Binding Parent.IsAddParameterVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                                             cal:Message.Attach="RemoveParameter($dataContext)"
-                                            ToolTip="Remove this parameter"/>
+                                            ToolTip="Remove this parameter">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                   BorderBrush="{TemplateBinding BorderBrush}"
+                                                                   BorderThickness="{TemplateBinding BorderThickness}"
+                                                                   CornerRadius="3">
+                                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                                VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#FF9999"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                 </Grid>
                             </Border>
                         </DataTemplate>

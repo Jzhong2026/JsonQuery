@@ -19,6 +19,11 @@
                 <x:Type TypeName="vm:ComparisonOperator"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+        <ObjectDataProvider x:Key="LogicalOperators" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="vm:LogicalOperator"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 
@@ -166,99 +171,110 @@
                                                BorderBrush="#CCCCCC"
                                                BorderThickness="1"
                                                CornerRadius="3"
-                                               Padding="8"
+                                               Padding="5"
                                                Background="#F9F9F9">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="60"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <ItemsControl ItemsSource="{Binding Conditions}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,2">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="65"/> 
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="90"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                
+                                                                <!-- Logical Operator -->
+                                                                <ComboBox Grid.Column="0"
+                                                                          ItemsSource="{Binding Source={StaticResource LogicalOperators}}"
+                                                                          SelectedItem="{Binding LogicalOperator}"
+                                                                          Height="26"
+                                                                          VerticalContentAlignment="Center"
+                                                                          Margin="0,0,5,0"
+                                                                          Visibility="{Binding IsLogicalOperatorVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                                
+                                                                <TextBlock Grid.Column="0" 
+                                                                           Text="Where" 
+                                                                           VerticalAlignment="Center" 
+                                                                           HorizontalAlignment="Center"
+                                                                           Foreground="Gray"
+                                                                           FontWeight="Bold"
+                                                                           Visibility="{Binding IsFirst, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                                                <!-- Field Selection -->
-                                                <TextBlock Grid.Row="0" Grid.Column="0" 
-                                                          Text="Field:" 
-                                                          VerticalAlignment="Center" 
-                                                          FontSize="11"
-                                                          Margin="0,0,5,5"/>
-                                                <ComboBox Grid.Row="0" Grid.Column="1" 
-                                                         ItemsSource="{Binding AvailableFields}"
-                                                         SelectedItem="{Binding ExpressionField}"
-                                                         IsEditable="True"
-                                                         Height="26"
-                                                         VerticalContentAlignment="Center"
-                                                         Margin="0,0,0,5"
-                                                         ToolTip="Select or enter a field path"/>
+                                                                <!-- Field -->
+                                                                <ComboBox Grid.Column="1"
+                                                                         ItemsSource="{Binding AvailableFields}"
+                                                                         SelectedItem="{Binding Field}"
+                                                                         IsEditable="True"
+                                                                         Height="26"
+                                                                         VerticalContentAlignment="Center"
+                                                                         Margin="0,0,5,0"
+                                                                         ToolTip="Field"/>
 
-                                                <!-- Operator Selection -->
-                                                <TextBlock Grid.Row="1" Grid.Column="0" 
-                                                          Text="Operator:" 
-                                                          VerticalAlignment="Center" 
-                                                          FontSize="11"
-                                                          Margin="0,0,5,5"/>
-                                                <ComboBox Grid.Row="1" Grid.Column="1" 
-                                                         ItemsSource="{Binding Source={StaticResource ComparisonOperators}}"
-                                                         SelectedItem="{Binding ExpressionOperator}"
-                                                         Height="26"
-                                                         VerticalContentAlignment="Center"
-                                                         Margin="0,0,0,5"/>
+                                                                <!-- Operator -->
+                                                                <ComboBox Grid.Column="2" 
+                                                                         ItemsSource="{Binding Source={StaticResource ComparisonOperators}}"
+                                                                         SelectedItem="{Binding Operator}"
+                                                                         Height="26"
+                                                                         VerticalContentAlignment="Center"
+                                                                         Margin="0,0,5,0"/>
 
-                                                <!-- Value Input -->
-                                                <TextBlock Grid.Row="2" Grid.Column="0" 
-                                                          Text="Value:" 
-                                                          VerticalAlignment="Center" 
-                                                          FontSize="11"
-                                                          Margin="0,0,5,0"/>
-                                                <Grid Grid.Row="2" Grid.Column="1">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    
-                                                    <!-- Value input (text or field selector based on toggle) -->
-                                                    <TextBox Grid.Column="0"
-                                                            Height="26"
-                                                            VerticalContentAlignment="Center"
-                                                            Visibility="{Binding ExpressionValueIsStatic, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                            ToolTip="Enter a static value">
-                                                        <TextBox.Text>
-                                                            <Binding Path="ExpressionValue" UpdateSourceTrigger="PropertyChanged"/>
-                                                        </TextBox.Text>
-                                                    </TextBox>
-                                                    
-                                                    <ComboBox Grid.Column="0"
-                                                             ItemsSource="{Binding AvailableFields}"
-                                                             SelectedItem="{Binding ExpressionValue}"
-                                                             IsEditable="True"
-                                                             Height="26"
-                                                             VerticalContentAlignment="Center"
-                                                             Visibility="{Binding ExpressionValueIsField, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                             ToolTip="Select a field to compare against"/>
+                                                                <!-- Value -->
+                                                                <Grid Grid.Column="3">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBox Grid.Column="0"
+                                                                            Height="26"
+                                                                            VerticalContentAlignment="Center"
+                                                                            Visibility="{Binding ValueIsStatic, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                            ToolTip="Value">
+                                                                        <TextBox.Text>
+                                                                            <Binding Path="Value" UpdateSourceTrigger="PropertyChanged"/>
+                                                                        </TextBox.Text>
+                                                                    </TextBox>
+                                                                    <ComboBox Grid.Column="0"
+                                                                             ItemsSource="{Binding AvailableFields}"
+                                                                             SelectedItem="{Binding Value}"
+                                                                             IsEditable="True"
+                                                                             Height="26"
+                                                                             VerticalContentAlignment="Center"
+                                                                             Visibility="{Binding ValueIsField, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                                    <ToggleButton Grid.Column="1" 
+                                                                                 Width="20" 
+                                                                                 Height="26"
+                                                                                 Margin="2,0,0,0"
+                                                                                 IsChecked="{Binding ValueIsField}"
+                                                                                 ToolTip="Toggle Field/Static"
+                                                                                 Content="F"
+                                                                                 FontSize="10"
+                                                                                 FontWeight="Bold"/>
+                                                                </Grid>
+
+                                                                <!-- Remove Condition -->
+                                                                <Button Grid.Column="4"
+                                                                        Content="x"
+                                                                        Width="20"
+                                                                        Height="26"
+                                                                        Margin="5,0,0,0"
+                                                                        ToolTip="Remove Condition"
+                                                                        cal:Action.TargetWithoutContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                        cal:Message.Attach="RemoveCondition($dataContext)"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
                                                 
-                                                    <!-- Toggle between static value and field -->
-                                                    <ToggleButton Grid.Column="1" 
-                                                                 Width="60" 
-                                                                 Height="26"
-                                                                 Margin="5,0,0,0"
-                                                                 IsChecked="{Binding ExpressionValueIsField}"
-                                                                 ToolTip="Toggle between static value and field reference">
-                                                        <ToggleButton.Style>
-                                                            <Style TargetType="ToggleButton">
-                                                                <Setter Property="Content" Value="Static"/>
-                                                                <Style.Triggers>
-                                                                    <Trigger Property="IsChecked" Value="True">
-                                                                        <Setter Property="Content" Value="Field"/>
-                                                                    </Trigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ToggleButton.Style>
-                                                    </ToggleButton>
-                                                </Grid>
-                                            </Grid>
+                                                <Button Content="+ Or / And" 
+                                                        Margin="0,5,0,0" 
+                                                        HorizontalAlignment="Left"
+                                                        FontSize="10"
+                                                        Padding="5,2"
+                                                        cal:Message.Attach="AddCondition"/>
+                                            </StackPanel>
                                         </Border>
                                     </Grid>
                                     

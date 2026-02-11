@@ -35,6 +35,117 @@ namespace JmesPathWpfDemo.ViewModels
         EndsWith            // ends_with(a, b)
     }
 
+    public enum LogicalOperator
+    {
+        And,
+        Or
+    }
+
+    public class ExpressionConditionViewModel : PropertyChangedBase
+    {
+        private string _field;
+        private ComparisonOperator _operator;
+        private string _value;
+        private bool _valueIsField;
+        private LogicalOperator _logicalOperator;
+        private ObservableCollection<string> _availableFields;
+        private QueryParameterViewModel _parent;
+        private bool _isFirst;
+
+        public ExpressionConditionViewModel(QueryParameterViewModel parent, ObservableCollection<string> availableFields, bool isFirst = false)
+        {
+            _parent = parent;
+            _availableFields = availableFields;
+            _operator = ComparisonOperator.Equal;
+            _logicalOperator = LogicalOperator.Or;
+            _value = "";
+            _isFirst = isFirst;
+        }
+
+        public string Field
+        {
+            get => _field;
+            set
+            {
+                _field = value;
+                NotifyOfPropertyChange(() => Field);
+                _parent?.NotifyQueryChange();
+            }
+        }
+
+        public ComparisonOperator Operator
+        {
+            get => _operator;
+            set
+            {
+                _operator = value;
+                NotifyOfPropertyChange(() => Operator);
+                _parent?.NotifyQueryChange();
+            }
+        }
+
+        public string Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                NotifyOfPropertyChange(() => Value);
+                _parent?.NotifyQueryChange();
+            }
+        }
+
+        public bool ValueIsField
+        {
+            get => _valueIsField;
+            set
+            {
+                _valueIsField = value;
+                NotifyOfPropertyChange(() => ValueIsField);
+                NotifyOfPropertyChange(() => ValueIsStatic);
+                _parent?.NotifyQueryChange();
+            }
+        }
+
+        public bool ValueIsStatic
+        {
+            get => !_valueIsField;
+            set
+            {
+                _valueIsField = !value;
+                NotifyOfPropertyChange(() => ValueIsField);
+                NotifyOfPropertyChange(() => ValueIsStatic);
+                _parent?.NotifyQueryChange();
+            }
+        }
+
+        public LogicalOperator LogicalOperator
+        {
+            get => _logicalOperator;
+            set
+            {
+                _logicalOperator = value;
+                NotifyOfPropertyChange(() => LogicalOperator);
+                _parent?.NotifyQueryChange();
+            }
+        }
+
+        public bool IsFirst
+        {
+            get => _isFirst;
+            set
+            {
+                _isFirst = value;
+                NotifyOfPropertyChange(() => IsFirst);
+                NotifyOfPropertyChange(() => IsLogicalOperatorVisible);
+            }
+        }
+
+        public bool IsLogicalOperatorVisible => !IsFirst;
+
+        public ObservableCollection<string> AvailableFields => _availableFields;
+    }
+
     public class QueryParameterViewModel : PropertyChangedBase
     {
         private ParameterType _type;
@@ -45,10 +156,7 @@ namespace JmesPathWpfDemo.ViewModels
         private string _selectedField;
         
         // For Expression Builder
-        private string _expressionField;
-        private ComparisonOperator _expressionOperator;
-        private string _expressionValue;
-        private bool _expressionValueIsField;
+        private ObservableCollection<ExpressionConditionViewModel> _conditions;
 
         public QueryParameterViewModel(ObservableCollection<SavedQuery> availableQueries, ObservableCollection<string> availableFields)
         {
@@ -60,9 +168,46 @@ namespace JmesPathWpfDemo.ViewModels
             if (_availableFields.Any())
                 _selectedField = _availableFields.First();
             
-            _expressionOperator = ComparisonOperator.Equal;
-            _expressionValue = "";
-            _expressionValueIsField = false;
+            _conditions = new ObservableCollection<ExpressionConditionViewModel>();
+            // Add initial condition
+            AddCondition(true);
+        }
+
+        public void AddCondition()
+        {
+            AddCondition(false);
+        }
+
+        public void AddCondition(bool isFirst)
+        {
+            var condition = new ExpressionConditionViewModel(this, _availableFields, isFirst);
+            if (!isFirst && _conditions.Any())
+            {
+                var last = _conditions.Last();
+                condition.Field = last.Field;
+            }
+            
+            _conditions.Add(condition);
+            NotifyQueryChange();
+        }
+
+        public void RemoveCondition(ExpressionConditionViewModel condition)
+        {
+            if (_conditions.Count <= 1) return;
+            
+            _conditions.Remove(condition);
+            
+            if (_conditions.Any())
+            {
+                _conditions.First().IsFirst = true;
+            }
+            
+            NotifyQueryChange();
+        }
+
+        public void NotifyQueryChange()
+        {
+            Parent?.NotifyQueryChange();
         }
 
         public ParameterType Type
@@ -129,60 +274,13 @@ namespace JmesPathWpfDemo.ViewModels
         }
 
         // Expression Builder Properties
-        public string ExpressionField
+        public ObservableCollection<ExpressionConditionViewModel> Conditions
         {
-            get => _expressionField;
+            get => _conditions;
             set
             {
-                _expressionField = value;
-                NotifyOfPropertyChange(() => ExpressionField);
-                Parent?.NotifyQueryChange();
-            }
-        }
-
-        public ComparisonOperator ExpressionOperator
-        {
-            get => _expressionOperator;
-            set
-            {
-                _expressionOperator = value;
-                NotifyOfPropertyChange(() => ExpressionOperator);
-                Parent?.NotifyQueryChange();
-            }
-        }
-
-        public string ExpressionValue
-        {
-            get => _expressionValue;
-            set
-            {
-                _expressionValue = value;
-                NotifyOfPropertyChange(() => ExpressionValue);
-                Parent?.NotifyQueryChange();
-            }
-        }
-
-        public bool ExpressionValueIsField
-        {
-            get => _expressionValueIsField;
-            set
-            {
-                _expressionValueIsField = value;
-                NotifyOfPropertyChange(() => ExpressionValueIsField);
-                NotifyOfPropertyChange(() => ExpressionValueIsStatic);
-                Parent?.NotifyQueryChange();
-            }
-        }
-
-        public bool ExpressionValueIsStatic
-        {
-            get => !_expressionValueIsField;
-            set
-            {
-                _expressionValueIsField = !value;
-                NotifyOfPropertyChange(() => ExpressionValueIsField);
-                NotifyOfPropertyChange(() => ExpressionValueIsStatic);
-                Parent?.NotifyQueryChange();
+                _conditions = value;
+                NotifyOfPropertyChange(() => Conditions);
             }
         }
 
@@ -231,34 +329,61 @@ namespace JmesPathWpfDemo.ViewModels
 
         private string BuildExpressionFromBuilder()
         {
-            var field = string.IsNullOrWhiteSpace(ExpressionField) ? "@" : ExpressionField;
-            var value = ExpressionValueIsField 
-                ? ExpressionValue 
-                : (IsNumeric(ExpressionValue) ? $"`{ExpressionValue}`" : $"'{ExpressionValue}'");
+            if (Conditions == null || !Conditions.Any())
+                return "null";
 
-            switch (ExpressionOperator)
+            var sb = new StringBuilder();
+            
+            foreach (var condition in Conditions)
             {
-                case ComparisonOperator.Equal:
-                    return $"eq({field}, {value})";
-                case ComparisonOperator.NotEqual:
-                    return $"!eq({field}, {value})";
-                case ComparisonOperator.Contains:
-                    return $"contains({field}, {value})";
-                case ComparisonOperator.StartsWith:
-                    return $"starts_with({field}, {value})";
-                case ComparisonOperator.EndsWith:
-                    return $"ends_with({field}, {value})";
-                case ComparisonOperator.GreaterThan:
-                    return $"{field} > {value}";
-                case ComparisonOperator.LessThan:
-                    return $"{field} < {value}";
-                case ComparisonOperator.GreaterThanOrEqual:
-                    return $"{field} >= {value}";
-                case ComparisonOperator.LessThanOrEqual:
-                    return $"{field} <= {value}";
-                default:
-                    return $"eq({field}, {value})";
+                if (!condition.IsFirst)
+                {
+                    sb.Append(condition.LogicalOperator == LogicalOperator.And ? " && " : " || ");
+                }
+
+                var field = string.IsNullOrWhiteSpace(condition.Field) ? "@" : condition.Field;
+                var value = condition.ValueIsField 
+                    ? condition.Value 
+                    : (IsNumeric(condition.Value) ? $"`{condition.Value}`" : $"'{condition.Value}'");
+
+                string expr;
+                switch (condition.Operator)
+                {
+                    case ComparisonOperator.Equal:
+                        expr = $"eq({field}, {value})";
+                        break;
+                    case ComparisonOperator.NotEqual:
+                        expr = $"!eq({field}, {value})";
+                        break;
+                    case ComparisonOperator.Contains:
+                        expr = $"contains({field}, {value})";
+                        break;
+                    case ComparisonOperator.StartsWith:
+                        expr = $"starts_with({field}, {value})";
+                        break;
+                    case ComparisonOperator.EndsWith:
+                        expr = $"ends_with({field}, {value})";
+                        break;
+                    case ComparisonOperator.GreaterThan:
+                        expr = $"{field} > {value}";
+                        break;
+                    case ComparisonOperator.LessThan:
+                        expr = $"{field} < {value}";
+                        break;
+                    case ComparisonOperator.GreaterThanOrEqual:
+                        expr = $"{field} >= {value}";
+                        break;
+                    case ComparisonOperator.LessThanOrEqual:
+                        expr = $"{field} <= {value}";
+                        break;
+                    default:
+                        expr = $"eq({field}, {value})";
+                        break;
+                }
+                sb.Append(expr);
             }
+
+            return sb.ToString();
         }
 
         private bool IsNumeric(string value)
@@ -383,9 +508,9 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 // Parameter 1: condition - use ExpressionBuilder
                 Parameters[0].Type = ParameterType.ExpressionBuilder;
-                if (_currentTabFields.Any())
+                if (_currentTabFields.Any() && Parameters[0].Conditions.Any())
                 {
-                    Parameters[0].ExpressionField = _currentTabFields.First();
+                    Parameters[0].Conditions[0].Field = _currentTabFields.First();
                 }
                 
                 // Parameter 2 & 3: true_value and false_value - use StaticString

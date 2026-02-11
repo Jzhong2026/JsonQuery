@@ -8,4 +8,9 @@
     <PackageReference Include="Caliburn.Micro" Version="4.0.212" />
     <PackageReference Include="JmesPath.Net" Version="1.0.330" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="sample.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

@@ -1,58 +1,69 @@
 {
-   "ActiveFrom":"2025-12-17 17:05:42.654",
-   "ActiveTo":"2025-12-17 17:06:42.654",
-   "ActiveStartTime":null,
-   "ActiveEndTime":null,
-   "DayOfWeek":null,
-   "GoalTimeInMinutes":1440,
-   "Callid":"0005: Sample Call1",
-   "Name":"0005: Sample Call1",
-   "CADMasterCallTableCallTaker":"0005: Sample Call1",
-   "Notes":"There was a Call on Main and Broadway!",
-   "PatrolTypeId":1,
-   "TypeId":51,
-   "MainRadioLogTableGeoYCoordinateOfUnit":"test",
-   "MainRadioLogTableGeoXCoordinateOfUnit":"test",
-   "Priority":"High",
-   "CallerName":"Clinton",
-   "UserDefinedFields":[
-       {
-         "DisplayName":"DD-text2",
-          "Id":1,
-		  "Attributes":[{
-			"ID":1,
-			"Name":"Attr1",
-			"CreateDate":"17:05:42 2025-12-18"
-		  },{
-			"ID":2,
-			"Name":"Attr2",
-			"CreateDate":"17:06:42 2025-12-16"
-		  },
-		  {
-			"ID":3,
-			"Name":"Attr3",
-			"CreateDate":"17:04:42 2025-12-17"
-		  }],
-         "RecordValue":"test"
-      },
-      {
-         "DisplayName":"DD-List",
-         "Id":2,
-		 "Attributes":[{
-			"ID":4,
-			"Name":"Attr4",
-			"CreateDate":"17:05:42 2025-12-18"
-		  },{
-			"ID":5,
-			"Name":"Attr5",
-			"CreateDate":"17:06:42 2025-12-16"
-		  },
-		  {
-			"ID":6,
-			"Name":"Attr6",
-			"CreateDate":"17:04:42 2025-12-17"
-		  }],
-         "RecordValue":"test"
-      }
-   ]
+	"ActiveFrom": "2025-12-17 17:05:42.654",
+	"ActiveTo": "2025-12-17 17:06:42.654",
+	"ActiveStartTime": null,
+	"ActiveEndTime": null,
+	"DayOfWeek": null,
+	"GoalTimeInMinutes": 1440,
+	"Callid": "0005: Sample Call1",
+	"Name": "0005: Sample Call1",
+	"CADMasterCallTableCallTaker": "0005: Sample Call1",
+	"Notes": "There was a Call on Main and Broadway!",
+	"PatrolTypeId": 1,
+	"TypeId": 51,
+	"MainRadioLogTableGeoYCoordinateOfUnit": "test",
+	"MainRadioLogTableGeoXCoordinateOfUnit": "test",
+	"Priority": "High",
+	"CallerName": "Clinton",
+	"UserDefinedFields": [
+		{
+			"DisplayName": "DD-text2",
+			"Id": 1,
+			"Attributes": [
+				{
+					"ID": 1,
+					"Name": "Attr1",
+					"CreateDate": "17:05:42 2025-12-18",
+					"Selections": [ 1, 2, 3 ]
+
+				},
+				{
+					"ID": 2,
+					"Name": "Attr2",
+					"CreateDate": "17:06:42 2025-12-16",
+					"Selections": [ 2, 3 ]
+				},
+				{
+					"ID": 3,
+					"Name": "Attr3",
+					"CreateDate": "17:04:42 2025-12-17",
+					"Selections": [ 2, 3 ]
+				}
+			],
+			"RecordValue": "test"
+		},
+		{
+			"DisplayName": "DD-List",
+			"Id": 2,
+			"Attributes": [
+				{
+					"ID": 4,
+					"Name": "Attr4",
+					"CreateDate": "17:05:42 2025-12-18",
+					"Selections": [ 2, 3 ]
+				},
+				{
+					"ID": 5,
+					"Name": "Attr5",
+					"CreateDate": "17:06:42 2025-12-16"
+				},
+				{
+					"ID": 6,
+					"Name": "Attr6",
+					"CreateDate": "17:04:42 2025-12-17"
+				}
+			],
+			"RecordValue": "test"
+		}
+	]
 }

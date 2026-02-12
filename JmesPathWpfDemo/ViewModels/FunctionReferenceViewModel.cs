@@ -754,6 +754,51 @@ namespace JmesPathWpfDemo.ViewModels
                 {
                     new FunctionInfo
                     {
+                        Name = "todate (custom)",
+                        Description = "Converts and formats date strings between different formats",
+                        Syntax = "todate(value, source_format, target_format)",
+                        Examples = new System.Collections.Generic.List<FunctionExample>
+                        {
+                            new FunctionExample
+                            {
+                                Description = "Convert date format (MM/dd/yyyy to yyyy-MM-dd)",
+                                JsonData = @"{
+  ""events"": [
+    {""name"": ""Meeting"", ""date"": ""01/15/2024""},
+    {""name"": ""Call"", ""date"": ""02/20/2024""}
+  ]
+}",
+                                Query = "todate(events[*].date, 'MM/dd/yyyy', 'yyyy-MM-dd')",
+                                ExpectedResult = @"[
+  ""2024-01-15"",
+  ""2024-02-20""
+]"
+                            },
+                            new FunctionExample
+                            {
+                                Description = "Auto-detect source format and use default output",
+                                JsonData = @"{
+  ""dates"": [""2024-01-15 14:30:00"", ""2024-02-20 09:15:00""]
+}",
+                                Query = "todate(dates, '', '')",
+                                ExpectedResult = @"[
+  ""2024-01-15"",
+  ""2024-02-20""
+]"
+                            },
+                            new FunctionExample
+                            {
+                                Description = "Custom output format (long date)",
+                                JsonData = @"{
+  ""eventDate"": ""2024-01-15""
+}",
+                                Query = "todate(eventDate, 'yyyy-MM-dd', 'MMMM dd, yyyy')",
+                                ExpectedResult = "\"January 15, 2024\""
+                            }
+                        }
+                    },
+                    new FunctionInfo
+                    {
                         Name = "todatetime (custom)",
                         Description = "Converts and formats date/time with timezone conversion",
                         Syntax = "todatetime(value, format, from_tz, to_tz)",

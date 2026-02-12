@@ -39,6 +39,7 @@ namespace JmesPathWpfDemo.ViewModels
 			_engine.FunctionRepository.Register<ConcatFunction>();
 			_engine.FunctionRepository.Register<ConcatWsFunction>();
 			_engine.FunctionRepository.Register<ToDateTimeFunction>();
+			_engine.FunctionRepository.Register<ToDateFunction>();
             _engine.FunctionRepository.Register<NewLineFunction>();
             _engine.FunctionRepository.Register<IffFunction>();
             _engine.FunctionRepository.Register<EqualFunction>();

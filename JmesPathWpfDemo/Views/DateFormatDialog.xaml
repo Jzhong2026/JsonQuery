@@ -1,0 +1,297 @@
+<Window x:Class="JmesPathWpfDemo.Views.DateFormatDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Date Format Conversion" 
+        Width="650" 
+        Height="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="25">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="30"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" 
+                   Text="Configure Date Format Conversion"
+                   FontSize="18"
+                   FontWeight="Bold"
+                   Margin="0,0,0,20"/>
+
+        <!-- Source Format -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+            <TextBlock Text="Source Format (leave empty to auto-detect):" 
+                       FontWeight="SemiBold"
+                       FontSize="13"
+                       Margin="0,0,0,8"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="SourceFormatTextBox"
+                         Grid.Column="0"
+                         Height="32"
+                         FontSize="13"
+                         VerticalContentAlignment="Center"
+                         FontFamily="Consolas"
+                         ToolTip="e.g., MM/dd/yyyy, yyyy-MM-dd HH:mm:ss"/>
+                <Button Grid.Column="1"
+                        Content="Clear"
+                        Width="60"
+                        Height="32"
+                        Margin="8,0,0,0"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Click="ClearSource_Click"
+                        ToolTip="Clear source format">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#DC3545"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#C82333"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+        </StackPanel>
+
+        <!-- Target Format -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,15">
+            <TextBlock Text="Target Format (leave empty for default yyyy-MM-dd):" 
+                       FontWeight="SemiBold"
+                       FontSize="13"
+                       Margin="0,0,0,8"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TargetFormatTextBox"
+                         Grid.Column="0"
+                         Height="32"
+                         FontSize="13"
+                         VerticalContentAlignment="Center"
+                         FontFamily="Consolas"
+                         ToolTip="e.g., yyyy-MM-dd, MMMM dd yyyy, MM/dd/yyyy"/>
+                <Button Grid.Column="1"
+                        Content="Clear"
+                        Width="60"
+                        Height="32"
+                        Margin="8,0,0,0"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Click="ClearTarget_Click"
+                        ToolTip="Clear target format">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#DC3545"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#C82333"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+        </StackPanel>
+
+        <!-- Quick Options -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,15">
+            <TextBlock Text="Quick Target Format Options:" 
+                       FontWeight="SemiBold"
+                       FontSize="13"
+                       Margin="0,0,0,8"/>
+            <WrapPanel>
+                <Button Content="yyyy-MM-dd" 
+                        Width="115" 
+                        Height="32" 
+                        FontSize="12"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Margin="0,0,8,8"
+                        Click="QuickFormat_Click"
+                        Tag="yyyy-MM-dd">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007BFF"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#0056B3"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="MM/dd/yyyy" 
+                        Width="115" 
+                        Height="32" 
+                        FontSize="12"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Margin="0,0,8,8"
+                        Click="QuickFormat_Click"
+                        Tag="MM/dd/yyyy">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007BFF"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#0056B3"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="dd/MM/yyyy" 
+                        Width="115" 
+                        Height="32" 
+                        FontSize="12"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Margin="0,0,8,8"
+                        Click="QuickFormat_Click"
+                        Tag="dd/MM/yyyy">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007BFF"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#0056B3"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="yyyyMMdd" 
+                        Width="115" 
+                        Height="32" 
+                        FontSize="12"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Margin="0,0,8,8"
+                        Click="QuickFormat_Click"
+                        Tag="yyyyMMdd">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007BFF"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#0056B3"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="MMMM dd, yyyy" 
+                        Width="130" 
+                        Height="32" 
+                        FontSize="12"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Margin="0,0,8,8"
+                        Click="QuickFormat_Click"
+                        Tag="MMMM dd, yyyy">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007BFF"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#0056B3"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Content="yyyy/MM/dd" 
+                        Width="115" 
+                        Height="32" 
+                        FontSize="12"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Margin="0,0,8,8"
+                        Click="QuickFormat_Click"
+                        Tag="yyyy/MM/dd">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007BFF"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#0056B3"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </WrapPanel>
+        </StackPanel>
+
+        <!-- Spacer -->
+        <Grid Grid.Row="4"/>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="5" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Content="OK" 
+                    Width="90" 
+                    Height="35"
+                    FontSize="13"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Margin="0,0,10,0"
+                    IsDefault="True"
+                    Click="OkButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#28A745"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#218838"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Content="Cancel" 
+                    Width="90" 
+                    Height="35"
+                    FontSize="13"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    IsCancel="True"
+                    Click="CancelButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#6C757D"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#5A6268"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

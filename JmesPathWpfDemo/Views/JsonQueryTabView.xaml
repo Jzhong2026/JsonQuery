@@ -12,6 +12,9 @@
                       DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                       cal:Message.Attach="CreateTabFromNode($dataContext)"/>
             <Separator/>
+            <MenuItem Header="Generate todate Query..." 
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateToDateQuery($dataContext)"/>
             <MenuItem Header="Generate todatetime Query" 
                       DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                       cal:Message.Attach="GenerateToDateTimeQuery($dataContext)"/>

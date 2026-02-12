@@ -43,6 +43,7 @@ namespace JmesPathWpfDemo.ViewModels
             _engine.FunctionRepository.Register<ConcatFunction>();
             _engine.FunctionRepository.Register<ConcatWsFunction>();
             _engine.FunctionRepository.Register<ToDateTimeFunction>();
+            _engine.FunctionRepository.Register<ToDateFunction>();
             _engine.FunctionRepository.Register<NewLineFunction>();
             _engine.FunctionRepository.Register<IffFunction>();
             _engine.FunctionRepository.Register<EqualFunction>();
@@ -225,6 +226,29 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 MessageBox.Show("Result is not valid JSON and cannot be opened as a new tab.", 
                     "Invalid JSON", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        public void GenerateToDateQuery(JsonTreeNode node)
+        {
+            if (node == null) return;
+
+            string detectedFormat = DetectDateFormat(node.Value);
+            var dialog = new DateFormatDialog(detectedFormat);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var sourceFormat = dialog.SourceFormat;
+                var targetFormat = dialog.TargetFormat;
+                
+                var sortedPath = GetSortedPath(node);
+                
+                // Build the todate query with format parameters
+                var sourceArg = string.IsNullOrWhiteSpace(sourceFormat) ? "''" : $"'{sourceFormat}'";
+                var targetArg = string.IsNullOrWhiteSpace(targetFormat) ? "''" : $"'{targetFormat}'";
+                
+                Query = $"todate({sortedPath}, {sourceArg}, {targetArg})";
             }
         }
 

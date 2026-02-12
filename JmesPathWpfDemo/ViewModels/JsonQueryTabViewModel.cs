@@ -263,6 +263,21 @@ namespace JmesPathWpfDemo.ViewModels
             }
         }
 
+        public void GenerateMapQuery(JsonTreeNode node)
+        {
+            if (node == null || !node.IsArray) return;
+
+            var sortedPath = GetSortedPath(node);
+
+            var dialog = new MapArrayDialog(node, sortedPath);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                Query = dialog.GeneratedQuery;
+            }
+        }
+
         public void GenerateFunctionQuery(JsonTreeNode node, string functionName)
         {
             if (node == null || string.IsNullOrEmpty(functionName)) return;

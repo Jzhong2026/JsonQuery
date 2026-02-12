@@ -56,6 +56,15 @@ namespace JmesPathWpfDemo.Views
             }
         }
 
+        private void GenerateMap_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is JsonTreeNode node)
+            {
+                var vm = DataContext as JsonQueryTabViewModel;
+                vm?.GenerateMapQuery(node);
+            }
+        }
+
         private void GenerateFunction_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem && 

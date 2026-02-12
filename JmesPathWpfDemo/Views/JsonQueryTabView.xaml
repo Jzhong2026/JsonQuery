@@ -23,6 +23,15 @@
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
+            <MenuItem Header="Generate map Query..." 
+                      Click="GenerateMap_Click"
+                      Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="IsEnabled" Value="{Binding PlacementTarget.DataContext.IsArray, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
 
             <MenuItem Header="Functions">
                 <MenuItem Header="Math (Number)">

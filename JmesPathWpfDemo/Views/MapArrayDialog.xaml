@@ -1,0 +1,89 @@
+<Window x:Class="JmesPathWpfDemo.Views.MapArrayDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cal="http://caliburnmicro.com"
+        Title="{Binding DialogTitle}" Width="800" Height="500"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="*"/>    <!-- Items -->
+            <RowDefinition Height="Auto"/> <!-- Add Button -->
+            <RowDefinition Height="Auto"/> <!-- Preview Label -->
+            <RowDefinition Height="Auto"/> <!-- Preview Box -->
+            <RowDefinition Height="Auto"/> <!-- Buttons -->
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Map each item in the array to a new object structure." 
+                   TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+        <!-- Headers -->
+        <Grid Grid.Row="1" Margin="0,0,40,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="1.5*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Source Property" FontWeight="Bold"/>
+            <TextBlock Grid.Column="1" Text="Function" FontWeight="Bold" Margin="5,0,0,0"/>
+            <TextBlock Grid.Column="2" Text="Target Property Name" FontWeight="Bold" Margin="5,0,0,0"/>
+        </Grid>
+
+        <!-- Items List -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding MappingItems}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="1.5*"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="30"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0" 
+                                      ItemsSource="{Binding AvailableProperties}"
+                                      SelectedItem="{Binding SourceProperty}"
+                                      IsEditable="True"
+                                      Margin="0,0,5,0"/>
+
+                            <ComboBox Grid.Column="1" 
+                                      ItemsSource="{Binding AvailableFunctions}"
+                                      SelectedItem="{Binding SelectedFunction}"
+                                      Margin="0,0,5,0"/>
+
+                            <TextBox Grid.Column="2" 
+                                     Text="{Binding TargetProperty, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,5,0"/>
+
+                            <Button Grid.Column="3" Content="X" 
+                                    Foreground="Red" FontWeight="Bold"
+                                    ToolTip="Remove Property"
+                                    cal:Action.TargetWithoutContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    cal:Message.Attach="RemoveMappingItem($dataContext)"
+                                    Background="Transparent" BorderThickness="0"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <Button Grid.Row="3" Content="+ Add Property" 
+                Width="120" HorizontalAlignment="Left" Margin="0,10,0,15"
+                cal:Message.Attach="AddMappingItem"/>
+
+        <TextBlock Grid.Row="4" Text="Preview JMESPath Query:" FontWeight="Bold"/>
+        <TextBox Grid.Row="5" Text="{Binding PreviewQuery, Mode=OneWay}" 
+                 IsReadOnly="True" TextWrapping="Wrap"
+                 FontFamily="Consolas" Background="#F0F0F0" Padding="5" Margin="0,5,0,15"
+                 MinHeight="60"/>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Apply" IsDefault="True" Width="80" Height="25" Click="OkButton_Click" Margin="0,0,10,0"/>
+            <Button Content="Cancel" IsCancel="True" Width="80" Height="25" Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

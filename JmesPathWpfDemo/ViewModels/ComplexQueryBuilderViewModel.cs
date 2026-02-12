@@ -422,7 +422,7 @@ namespace JmesPathWpfDemo.ViewModels
                 new FunctionDefinition { Name = "concat_ws", IsVariadic = true },
                 new FunctionDefinition { Name = "merge_arrays", IsVariadic = true },
                 new FunctionDefinition { Name = "flatten", IsVariadic = false, ParameterCount = 1 },
-                new FunctionDefinition { Name = "join", IsVariadic = false, ParameterCount = 2 },
+                new FunctionDefinition { Name = "join", IsVariadic = false, ParameterCount = 3 },
                 new FunctionDefinition { Name = "to_string", IsVariadic = false, ParameterCount = 1 },
                 new FunctionDefinition { Name = "to_number", IsVariadic = false, ParameterCount = 1 },
                 new FunctionDefinition { Name = "length", IsVariadic = false, ParameterCount = 1 },
@@ -494,7 +494,20 @@ namespace JmesPathWpfDemo.ViewModels
                 }
             }
 
-            if (SelectedFunction.Name == "join" || SelectedFunction.Name == "concat_ws")
+            if (SelectedFunction.Name == "join")
+            {
+                // UI: 1. Array (SavedQuery), 2. Separator, 3. Projection (CurrentTabField or SavedQuery)
+                if (Parameters.Count >= 3)
+                {
+                    Parameters[0].Type = ParameterType.SavedQuery;
+                    
+                    Parameters[1].Type = ParameterType.Separator;
+                    Parameters[1].StaticValue = ", ";
+
+                    Parameters[2].Type = ParameterType.CurrentTabField;
+                }
+            }
+            else if (SelectedFunction.Name == "concat_ws")
             {
                 if (Parameters.Count > 0)
                 {
@@ -538,6 +551,44 @@ namespace JmesPathWpfDemo.ViewModels
         public void NotifyQueryChange()
         {
             if (SelectedFunction == null) return;
+
+            // Special handling for join: UI presents (Array, Separator, Projection)
+            // Function expects: join(separator, array) where array can be array[*].projection
+            if (SelectedFunction.Name == "join" && Parameters.Count >= 3)
+            {
+                var arrayExpr = Parameters[0].GetExpression();
+                var sepExpr = Parameters[1].GetExpression();
+                var projectionExpr = Parameters[2].GetExpression();
+
+                // Construct: join(separator, array[*].projection)
+                // If projection is effectively empty, use array as is
+                
+                string finalArrayExpr = arrayExpr;
+                if (projectionExpr != "null" && projectionExpr != "@" && !string.IsNullOrWhiteSpace(projectionExpr))
+                {
+                     // If projection starts with "[", it might be an array index or slice, append directly
+                     // otherwise assume field access
+                     if (projectionExpr.StartsWith("["))
+                     {
+                         finalArrayExpr = $"{arrayExpr}{projectionExpr}";
+                     }
+                     else
+                     {
+                         finalArrayExpr = $"{arrayExpr}[*].{projectionExpr}";
+                     }
+                }
+                // If projection is "@", it means current item, but since we are projecting from array,
+                // array[*] or existing arrayExpr is usually sufficient. But if arrayExpr is just `People`,
+                // `People` is an array. `join` on `People` expects strings.
+                // If `People` is objects, we need projection.
+                // If the user selected "@", they might mean `People[*]`? 
+                // Let's assume "@" means "no additional projection beyond what's in arrayExpr"
+                // But typically user wants to flatten/project.
+                // For now, if projection is "null" or "@", we assume arrayExpr is sufficient.
+
+                ResultQuery = $"{SelectedFunction.Name}({sepExpr}, {finalArrayExpr})";
+                return;
+            }
 
             var args = string.Join(", ", Parameters.Select(p => p.GetExpression()));
             ResultQuery = $"{SelectedFunction.Name}({args})";

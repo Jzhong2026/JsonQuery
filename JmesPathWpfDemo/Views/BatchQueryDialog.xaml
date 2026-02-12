@@ -4,8 +4,14 @@
         xmlns:cal="http://caliburnmicro.com"
         Title="Batch Query on Array" Width="700" Height="550"
         WindowStartupLocation="CenterOwner" ResizeMode="CanResize">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -22,34 +28,46 @@
 
         <TextBlock Grid.Row="1" Text="Query for each item:" FontWeight="Bold"/>
 
-        <Grid Grid.Row="2" Margin="0,5,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <!-- Mode Selection -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,5">
+            <RadioButton Content="Select Property" IsChecked="{Binding IsForField}" Margin="0,0,15,0"/>
+            <RadioButton Content="Use Saved Query" IsChecked="{Binding IsForSavedQuery}"/>
+        </StackPanel>
+
+        <!-- Dropdowns -->
+        <Grid Grid.Row="3" Margin="0,0,0,10">
+            <!-- Property Selector -->
+            <ComboBox ItemsSource="{Binding AvailableProperties}" 
+                      SelectedItem="{Binding SelectedField}"
+                      Visibility="{Binding IsForField, Converter={StaticResource BooleanToVisibilityConverter}}"
+                      IsEditable="True"
+                      Height="30" VerticalAlignment="Top"
+                      ToolTip="Select a property or type"/>
             
-            <TextBox Grid.Column="0" 
-                     Text="{Binding QueryTemplate, UpdateSourceTrigger=PropertyChanged}" 
-                     Height="60" AcceptsReturn="True" TextWrapping="Wrap"
-                     FontFamily="Consolas" Padding="5"/>
-            
-            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Top">
-                <TextBlock Text="Load Saved Query:" FontSize="10" Margin="0,0,0,2" Foreground="Gray"/>
+            <!-- Saved Query Selector -->
+            <StackPanel Visibility="{Binding IsForSavedQuery, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <ComboBox ItemsSource="{Binding SavedQueries}"
                           SelectedItem="{Binding SelectedSavedQuery}"
                           DisplayMemberPath="Name"
-                          Width="140"
-                          Height="25"
+                          Height="30"
                           ToolTip="Select a pre-defined query from Query Store"/>
+                <TextBlock Text="{Binding SelectedSavedQuery.Description}" 
+                           FontSize="10" Foreground="Gray" Margin="0,2,0,0" TextWrapping="Wrap"/>
             </StackPanel>
         </Grid>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,5,0,0">
+        <TextBlock Grid.Row="4" Text="Resulting JMESPath Expression:" FontSize="10" Foreground="Gray"/>
+        <TextBox Grid.Row="5" 
+                 Text="{Binding QueryTemplate, UpdateSourceTrigger=PropertyChanged}" 
+                 Height="50" AcceptsReturn="True" TextWrapping="Wrap" 
+                 FontFamily="Consolas" Padding="5" Margin="0,0,0,15"/>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,5,0,0">
             <TextBlock Text="Join Separator:" FontWeight="Bold" VerticalAlignment="Center"/>
             <TextBlock Text="(Use \n for newline)" FontSize="10" Foreground="Gray" Margin="5,0,0,0" VerticalAlignment="Bottom"/>
         </StackPanel>
         
-        <WrapPanel Grid.Row="4" Margin="0,5,0,5">
+        <WrapPanel Grid.Row="7" Margin="0,5,0,5">
             <Button Content="Space" Tag=" " Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="50" ToolTip="Add space"/>
             <Button Content="Comma" Tag="," Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="50" ToolTip="Add comma"/>
             <Button Content="Newline" Tag="\n" Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="60" ToolTip="Add \n"/>
@@ -59,9 +77,9 @@
             <Button Content="Clear" Click="ClearSeparator_Click" Margin="5,0,0,0" Padding="5,2" MinWidth="50" Background="#DC3545" Foreground="White" ToolTip="Clear separator"/>
         </WrapPanel>
 
-        <ComboBox Grid.Row="5" Text="{Binding Separator, UpdateSourceTrigger=PropertyChanged}" 
+        <ComboBox Grid.Row="8" Text="{Binding Separator, UpdateSourceTrigger=PropertyChanged}" 
                   x:Name="SeparatorComboBox"
-                  IsEditable="True" Margin="0,0,0,15">
+                  IsEditable="True" Margin="0,0,0,15" Height="25">
             <ComboBoxItem Content="\n" ToolTip="Newline character"/>
             <ComboBoxItem Content=",\n" ToolTip="Comma followed by newline"/>
             <ComboBoxItem Content="\n\n" ToolTip="Two newlines"/>
@@ -70,12 +88,13 @@
             <ComboBoxItem Content="," Tag=","/>
         </ComboBox>
 
-        <TextBlock Grid.Row="6" Text="Preview JMESPath Query:" FontWeight="Bold"/>
-        <TextBox Grid.Row="7" Text="{Binding PreviewQuery, Mode=OneWay}" 
-                 IsReadOnly="True" TextWrapping="Wrap"
-                 FontFamily="Consolas" Background="#F0F0F0" Padding="5"/>
+        <TextBlock Grid.Row="9" Text="Preview JMESPath Query:" FontWeight="Bold"/>
 
-        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+        <TextBox Grid.Row="10" Text="{Binding PreviewQuery, Mode=OneWay}" 
+                 IsReadOnly="True" TextWrapping="Wrap"
+                 FontFamily="Consolas" Background="#F0F0F0" Padding="5" Margin="0,5,0,0"/>
+
+        <StackPanel Grid.Row="11" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
             <Button Content="Apply" IsDefault="True" Width="80" Height="25" Click="OkButton_Click" Margin="0,0,10,0"/>
             <Button Content="Cancel" IsCancel="True" Width="80" Height="25" Click="CancelButton_Click"/>
         </StackPanel>

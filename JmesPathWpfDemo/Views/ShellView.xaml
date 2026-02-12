@@ -276,12 +276,19 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
             <!-- Tab Control for JSON Query Tabs -->
             <TabControl Grid.Row="1"
                         ItemsSource="{Binding JsonQueryTabs}"
-                        SelectedItem="{Binding SelectedJsonQueryTab}">
+                        SelectedItem="{Binding SelectedJsonQueryTab}"
+                        Style="{StaticResource ModernTabControlStyle}"
+                        Background="#F8F9FA"
+                        BorderBrush="#DEE2E6"
+                        BorderThickness="0,2,0,0">
+                <TabControl.ItemContainerStyle>
+                    <Style TargetType="TabItem" BasedOn="{StaticResource QueryTabStyle}"/>
+                </TabControl.ItemContainerStyle>
                 <TabControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding TabTitle}" 
-                                       Margin="0,0,5,0"
+                                       Margin="0,0,8,0"
                                        VerticalAlignment="Center"/>
                             <Button Width="18" 
                                     Height="18"
@@ -293,16 +300,33 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
                                     cal:Message.Attach="[Event Click] = [Action CloseTab($dataContext)]"
                                     ToolTip="Close Tab">
                                 <Button.Content>
-                                    <TextBlock Text="&#x00D7;" FontSize="14"/>
+                                    <TextBlock Text="&#x00D7;" FontSize="16" FontFamily="Arial"/>
                                 </Button.Content>
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
                                         <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="Foreground" Value="#6C757D"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}"
+                                                           BorderBrush="{TemplateBinding BorderBrush}"
+                                                           BorderThickness="{TemplateBinding BorderThickness}"
+                                                           CornerRadius="9"
+                                                           Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center"
+                                                                        VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#FFCCCC"/>
+                                                <Setter Property="Background" Value="#DC3545"/>
+                                                <Setter Property="Foreground" Value="White"/>
                                             </Trigger>
                                         </Style.Triggers>
                                     </Style>

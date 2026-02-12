@@ -5,6 +5,10 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Button Styles Theme -->
+                <ResourceDictionary Source="Themes/ButtonStyles.xaml"/>
+                
+                <!-- Bootstrapper -->
                 <ResourceDictionary>
                     <local:AppBootstrapper x:Key="bootstrapper" />
                 </ResourceDictionary>

@@ -44,24 +44,10 @@
                 <Button Grid.Column="1"
                         Content="Clear"
                         Width="60"
-                        Height="32"
+                        Style="{StaticResource DangerButtonStyle}"
                         Margin="8,0,0,0"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
                         Click="ClearSource_Click"
-                        ToolTip="Clear source format">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#DC3545"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#C82333"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        ToolTip="Clear source format"/>
             </Grid>
         </StackPanel>
 
@@ -86,24 +72,10 @@
                 <Button Grid.Column="1"
                         Content="Clear"
                         Width="60"
-                        Height="32"
+                        Style="{StaticResource DangerButtonStyle}"
                         Margin="8,0,0,0"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
                         Click="ClearTarget_Click"
-                        ToolTip="Clear target format">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#DC3545"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#C82333"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        ToolTip="Clear target format"/>
             </Grid>
         </StackPanel>
 
@@ -115,131 +87,41 @@
                        Margin="0,0,0,8"/>
             <WrapPanel>
                 <Button Content="yyyy-MM-dd" 
-                        Width="115" 
-                        Height="32" 
-                        FontSize="12"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Width="115"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,0,8,8"
                         Click="QuickFormat_Click"
-                        Tag="yyyy-MM-dd">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#007BFF"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#0056B3"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Tag="yyyy-MM-dd"/>
                 <Button Content="MM/dd/yyyy" 
-                        Width="115" 
-                        Height="32" 
-                        FontSize="12"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Width="115"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,0,8,8"
                         Click="QuickFormat_Click"
-                        Tag="MM/dd/yyyy">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#007BFF"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#0056B3"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Tag="MM/dd/yyyy"/>
                 <Button Content="dd/MM/yyyy" 
-                        Width="115" 
-                        Height="32" 
-                        FontSize="12"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Width="115"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,0,8,8"
                         Click="QuickFormat_Click"
-                        Tag="dd/MM/yyyy">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#007BFF"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#0056B3"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Tag="dd/MM/yyyy"/>
                 <Button Content="yyyyMMdd" 
-                        Width="115" 
-                        Height="32" 
-                        FontSize="12"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Width="115"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,0,8,8"
                         Click="QuickFormat_Click"
-                        Tag="yyyyMMdd">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#007BFF"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#0056B3"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Tag="yyyyMMdd"/>
                 <Button Content="MMMM dd, yyyy" 
-                        Width="130" 
-                        Height="32" 
-                        FontSize="12"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Width="130"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,0,8,8"
                         Click="QuickFormat_Click"
-                        Tag="MMMM dd, yyyy">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#007BFF"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#0056B3"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Tag="MMMM dd, yyyy"/>
                 <Button Content="yyyy/MM/dd" 
-                        Width="115" 
-                        Height="32" 
-                        FontSize="12"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Width="115"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,0,8,8"
                         Click="QuickFormat_Click"
-                        Tag="yyyy/MM/dd">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#007BFF"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#0056B3"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        Tag="yyyy/MM/dd"/>
             </WrapPanel>
         </StackPanel>
 
@@ -252,46 +134,16 @@
                     HorizontalAlignment="Right"
                     Margin="0,20,0,0">
             <Button Content="OK" 
-                    Width="90" 
-                    Height="35"
-                    FontSize="13"
-                    Foreground="White"
-                    BorderThickness="0"
-                    Cursor="Hand"
+                    Width="90"
+                    Style="{StaticResource SuccessButtonStyle}"
                     Margin="0,0,10,0"
                     IsDefault="True"
-                    Click="OkButton_Click">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#28A745"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#218838"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Click="OkButton_Click"/>
             <Button Content="Cancel" 
-                    Width="90" 
-                    Height="35"
-                    FontSize="13"
-                    Foreground="White"
-                    BorderThickness="0"
-                    Cursor="Hand"
+                    Width="90"
+                    Style="{StaticResource SecondaryButtonStyle}"
                     IsCancel="True"
-                    Click="CancelButton_Click">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#6C757D"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#5A6268"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Click="CancelButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>

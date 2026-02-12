@@ -183,24 +183,9 @@
             
             <Button Grid.Column="2"
                     Content="Refresh Tree" 
-                    Width="100" 
-                    Height="28"
-                    Foreground="White"
-                    FontWeight="Bold"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    cal:Message.Attach="RefreshTree">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#28A745"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#218838"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Width="100"
+                    Style="{StaticResource SuccessButtonStyle}"
+                    cal:Message.Attach="RefreshTree"/>
         </Grid>
         
         <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}"
@@ -266,25 +251,10 @@
         <DockPanel Grid.Row="3" Margin="0,0,0,10">
             <Button DockPanel.Dock="Right"
                     Content="Execute" 
-                    Width="100" 
-                    Height="32"
+                    Width="100"
                     Margin="10,0,0,0"
-                    Foreground="White"
-                    FontWeight="Bold"
-                    BorderThickness="0"
-                    Cursor="Hand"
-                    cal:Message.Attach="Execute">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#0078D4"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#005A9E"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    cal:Message.Attach="Execute"/>
             <TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" 
                      FontSize="12"
                      Padding="5"
@@ -321,18 +291,8 @@
                     BorderThickness="0"
                     Cursor="Hand"
                     Visibility="{Binding HasValidResult, Converter={StaticResource BooleanToVisibilityConverter}}"
-                    cal:Message.Attach="CreateTabFromResult">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#6F42C1"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#5A32A3"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Style="{StaticResource PurpleButtonStyle}"
+                    cal:Message.Attach="CreateTabFromResult"/>
         </Grid>
         
         <TextBox Grid.Row="5" Text="{Binding Result, Mode=OneWay}" 

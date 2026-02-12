@@ -165,75 +165,45 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
                     HorizontalAlignment="Center"
                     Margin="0,0,0,15">
             <Button Content="JSON Query" 
-                    Width="120" 
-                    Height="35"
+                    Width="120"
                     Margin="0,0,5,0"
-                    FontSize="14"
-                    FontWeight="Bold"
-                    BorderThickness="0"
-                    Cursor="Hand"
                     cal:Message.Attach="ShowJsonQuery">
                 <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#0078D4"/>
-                        <Setter Property="Foreground" Value="White"/>
+                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="JsonQuery">
                                 <Setter Property="Background" Value="#005A9E"/>
                             </DataTrigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#106EBE"/>
-                            </Trigger>
                         </Style.Triggers>
                     </Style>
                 </Button.Style>
             </Button>
             
             <Button Content="Query Store" 
-                    Width="120" 
-                    Height="35"
+                    Width="120"
                     Margin="5,0,5,0"
-                    FontSize="14"
-                    FontWeight="Bold"
-                    BorderThickness="0"
-                    Cursor="Hand"
                     cal:Message.Attach="ShowQueryStore">
                 <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#0078D4"/>
-                        <Setter Property="Foreground" Value="White"/>
+                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="QueryStore">
                                 <Setter Property="Background" Value="#005A9E"/>
                             </DataTrigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#106EBE"/>
-                            </Trigger>
                         </Style.Triggers>
                     </Style>
                 </Button.Style>
             </Button>
 
             <Button Content="Function Reference" 
-                    Width="140" 
-                    Height="35"
+                    Width="140"
                     Margin="5,0,0,0"
-                    FontSize="14"
-                    FontWeight="Bold"
-                    BorderThickness="0"
-                    Cursor="Hand"
                     cal:Message.Attach="ShowFunctionReference">
                 <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#0078D4"/>
-                        <Setter Property="Foreground" Value="White"/>
+                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="FunctionReference">
                                 <Setter Property="Background" Value="#005A9E"/>
                             </DataTrigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#106EBE"/>
-                            </Trigger>
                         </Style.Triggers>
                     </Style>
                 </Button.Style>
@@ -253,23 +223,13 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
                         HorizontalAlignment="Right"
                         Margin="0,0,0,5">
                 <Button Content="Complex Query..." 
-                        Width="120" 
-                        Height="32"
+                        Width="120"
                         Margin="0,0,10,0"
-                        Background="#17A2B8"
-                        Foreground="White"
-                        FontWeight="Bold"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Style="{StaticResource InfoButtonStyle}"
                         cal:Message.Attach="BuildComplexQuery"/>
                 <Button Content="Save to Store" 
-                        Width="100" 
-                        Height="32"
-                        Background="#FF8C00"
-                        Foreground="White"
-                        FontWeight="Bold"
-                        BorderThickness="0"
-                        Cursor="Hand"
+                        Width="100"
+                        Style="{StaticResource WarningButtonStyle}"
                         cal:Message.Attach="SaveCurrentQuery"/>
             </StackPanel>
 

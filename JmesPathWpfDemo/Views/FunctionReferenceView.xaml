@@ -206,37 +206,9 @@
                                                         <!-- Try It Button -->
                                                         <Button Content="Try This Example ?" 
                                                                Width="150"
-                                                               Height="32"
                                                                HorizontalAlignment="Left"
-                                                               Background="#28A745"
-                                                               Foreground="White"
-                                                               FontWeight="Bold"
-                                                               FontSize="12"
-                                                               BorderThickness="0"
-                                                               Cursor="Hand"
-                                                               cal:Message.Attach="[Event Click] = [Action TryExample($dataContext)]">
-                                                            <Button.Style>
-                                                                <Style TargetType="Button">
-                                                                    <Setter Property="Template">
-                                                                        <Setter.Value>
-                                                                            <ControlTemplate TargetType="Button">
-                                                                                <Border Background="{TemplateBinding Background}" 
-                                                                                       CornerRadius="3"
-                                                                                       Padding="{TemplateBinding Padding}">
-                                                                                    <ContentPresenter HorizontalAlignment="Center" 
-                                                                                                     VerticalAlignment="Center"/>
-                                                                                </Border>
-                                                                            </ControlTemplate>
-                                                                        </Setter.Value>
-                                                                    </Setter>
-                                                                    <Style.Triggers>
-                                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                                            <Setter Property="Background" Value="#218838"/>
-                                                                        </Trigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Button.Style>
-                                                        </Button>
+                                                               Style="{StaticResource SuccessButtonStyle}"
+                                                               cal:Message.Attach="[Event Click] = [Action TryExample($dataContext)]"/>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>

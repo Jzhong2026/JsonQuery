@@ -46,9 +46,13 @@
                                 <Button Content="Use" 
                                         Padding="10,2"
                                         Margin="0,0,5,0"
+                                        Style="{StaticResource SuccessButtonStyle}"
+                                        Height="28"
                                         cal:Message.Attach="LoadQuery($dataContext)"/>
                                 <Button Content="Delete" 
                                         Padding="5,2"
+                                        Style="{StaticResource DangerButtonStyle}"
+                                        Height="28"
                                         cal:Message.Attach="DeleteQuery($dataContext)"/>
                             </StackPanel>
                         </DataTemplate>

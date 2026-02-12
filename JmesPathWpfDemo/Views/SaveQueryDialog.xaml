@@ -23,8 +23,8 @@
         <TextBox Grid.Row="3" x:Name="DescriptionTextBox" Height="25" Margin="0,0,0,10"/>
 
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button x:Name="OkButton" Content="Save" Width="80" Height="25" Margin="0,0,10,0" Click="OkButton_Click" IsDefault="True"/>
-            <Button x:Name="CancelButton" Content="Cancel" Width="80" Height="25" Click="CancelButton_Click" IsCancel="True"/>
+            <Button x:Name="OkButton" Content="Save" Width="80" Margin="0,0,10,0" Click="OkButton_Click" IsDefault="True" Style="{StaticResource PrimaryButtonStyle}"/>
+            <Button x:Name="CancelButton" Content="Cancel" Width="80" Click="CancelButton_Click" IsCancel="True" Style="{StaticResource SecondaryButtonStyle}"/>
         </StackPanel>
     </Grid>
 </Window>

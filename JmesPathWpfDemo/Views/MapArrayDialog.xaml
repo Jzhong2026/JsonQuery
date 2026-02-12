@@ -73,6 +73,7 @@
 
         <Button Grid.Row="3" Content="+ Add Property" 
                 Width="120" HorizontalAlignment="Left" Margin="0,10,0,15"
+                Style="{StaticResource SuccessButtonStyle}"
                 cal:Message.Attach="AddMappingItem"/>
 
         <TextBlock Grid.Row="4" Text="Preview JMESPath Query:" FontWeight="Bold"/>
@@ -82,8 +83,8 @@
                  MinHeight="60"/>
 
         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Apply" IsDefault="True" Width="80" Height="25" Click="OkButton_Click" Margin="0,0,10,0"/>
-            <Button Content="Cancel" IsCancel="True" Width="80" Height="25" Click="CancelButton_Click"/>
+            <Button Content="Apply" IsDefault="True" Width="80" Click="OkButton_Click" Margin="0,0,10,0" Style="{StaticResource PrimaryButtonStyle}"/>
+            <Button Content="Cancel" IsCancel="True" Width="80" Click="CancelButton_Click" Style="{StaticResource SecondaryButtonStyle}"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -347,8 +347,17 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Use Query" Width="100" Height="30" Margin="0,0,10,0" IsDefault="True" cal:Message.Attach="Ok"/>
-            <Button Content="Cancel" Width="100" Height="30" IsCancel="True" cal:Message.Attach="Cancel"/>
+            <Button Content="Use Query" 
+                    Width="100" 
+                    Margin="0,0,10,0" 
+                    IsDefault="True" 
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    cal:Message.Attach="Ok"/>
+            <Button Content="Cancel" 
+                    Width="100" 
+                    IsCancel="True" 
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    cal:Message.Attach="Cancel"/>
         </StackPanel>
     </Grid>
 </Window>

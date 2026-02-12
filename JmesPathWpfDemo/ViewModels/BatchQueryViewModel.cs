@@ -141,6 +141,16 @@ namespace JmesPathWpfDemo.ViewModels
             }
         }
 
+        public void AddSeparator(string separator)
+        {
+            Separator += separator;
+        }
+
+        public void ClearSeparator()
+        {
+            Separator = string.Empty;
+        }
+
         private string ParseSeparator(string input)
         {
             if (string.IsNullOrEmpty(input)) return "''";

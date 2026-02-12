@@ -6,23 +6,24 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
    <Window.Resources>
        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <!-- Context Menu for Array Nodes -->
-        <ContextMenu x:Key="ArrayNodeContextMenu">
+        <ContextMenu x:Key="ArrayNodeContextMenu"
+                     cal:Action.TargetWithoutContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
             <MenuItem Header="Generate todatetime Query" 
-                      Click="GenerateToDateTime_Click"
-                      Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateToDateTimeQuery($dataContext)"/>
             <MenuItem Header="Generate join Query" 
-                      Click="GenerateJoin_Click"
-                      Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateJoinQuery($dataContext)">
                 <MenuItem.Style>
                     <Style TargetType="MenuItem">
-                        <Setter Property="IsEnabled" Value="{Binding PlacementTarget.DataContext.IsArray, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        <Setter Property="IsEnabled" Value="{Binding IsArray}"/>
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
 
             <MenuItem Header="Combine / Flatten All" 
-                      Click="GenerateCombine_Click"
-                      Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateCombineQuery($dataContext)"/>
 
             <MenuItem Header="Functions">
                 <MenuItem Header="Math (Number)">
@@ -30,15 +31,21 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
                         <Style TargetType="MenuItem">
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding PlacementTarget.DataContext.Type, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Value="Number">
+                                <DataTrigger Binding="{Binding Type}" Value="Number">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </MenuItem.Style>
-                    <MenuItem Header="abs" Click="GenerateFunction_Click" CommandParameter="abs" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="ceil" Click="GenerateFunction_Click" CommandParameter="ceil" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="floor" Click="GenerateFunction_Click" CommandParameter="floor" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="abs" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'abs')"/>
+                    <MenuItem Header="ceil" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'ceil')"/>
+                    <MenuItem Header="floor" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'floor')"/>
                 </MenuItem>
 
                 <MenuItem Header="Aggregates (Array)">
@@ -46,45 +53,61 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
                         <Style TargetType="MenuItem">
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding PlacementTarget.DataContext.IsArray, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Value="True">
+                                <DataTrigger Binding="{Binding IsArray}" Value="True">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </MenuItem.Style>
-                    <MenuItem Header="avg" Click="GenerateFunction_Click" CommandParameter="avg" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="sum" Click="GenerateFunction_Click" CommandParameter="sum" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="min" Click="GenerateFunction_Click" CommandParameter="min" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="max" Click="GenerateFunction_Click" CommandParameter="max" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="length" Click="GenerateFunction_Click" CommandParameter="length" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="avg" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'avg')"/>
+                    <MenuItem Header="sum" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'sum')"/>
+                    <MenuItem Header="min" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'min')"/>
+                    <MenuItem Header="max" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'max')"/>
+                    <MenuItem Header="length" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'length')"/>
                 </MenuItem>
 
                 <MenuItem Header="Conversion">
-                    <MenuItem Header="to_string" Click="GenerateFunction_Click" CommandParameter="to_string" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                    <MenuItem Header="to_number" Click="GenerateFunction_Click" CommandParameter="to_number" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="to_string" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'to_string')"/>
+                    <MenuItem Header="to_number" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'to_number')"/>
                 </MenuItem>
 
                 <MenuItem Header="Type Check">
-                    <MenuItem Header="type" Click="GenerateFunction_Click" CommandParameter="type" Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="type" 
+                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                             cal:Message.Attach="GenerateFunctionQuery($dataContext, 'type')"/>
                 </MenuItem>
             </MenuItem>
             
             <Separator/>
             <MenuItem Header="Configure Array Sort..." 
-                      Click="ConfigureSort_Click"
-                      Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="ConfigureArraySort($dataContext)">
                 <MenuItem.Style>
                     <Style TargetType="MenuItem">
-                        <Setter Property="IsEnabled" Value="{Binding PlacementTarget.DataContext.IsArray, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        <Setter Property="IsEnabled" Value="{Binding IsArray}"/>
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
             <MenuItem Header="Clear Sort" 
-                      Click="ClearSort_Click"
-                      Tag="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="ClearArraySort($dataContext)">
                 <MenuItem.Style>
                     <Style TargetType="MenuItem">
-                        <Setter Property="IsEnabled" Value="{Binding PlacementTarget.DataContext.HasSortApplied, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        <Setter Property="IsEnabled" Value="{Binding HasSortApplied}"/>
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
@@ -96,6 +119,8 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="ContextMenu" Value="{StaticResource ArrayNodeContextMenu}"/>
+            <!-- Bind Tag to ViewModel so ContextMenu can access it via PlacementTarget.Tag -->
+            <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"/>
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TreeViewItem_PreviewMouseLeftButtonDown"/>
         </Style>
 
@@ -104,7 +129,7 @@ Title="JMESPath Demo" Width="1000" Height="700" WindowState="Maximized">
             <Setter Property="Padding" Value="3,2"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="Transparent"/>
-            <EventSetter Event="MouseDown" Handler="NodeText_MouseDown"/>
+            <Setter Property="cal:Message.Attach" Value="[Event MouseDown] = [Action OnNodeSelected($dataContext)]"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
                     <Setter Property="Background" Value="#FFE699"/>

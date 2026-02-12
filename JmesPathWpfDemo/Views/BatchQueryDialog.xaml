@@ -68,13 +68,13 @@
         </StackPanel>
         
         <WrapPanel Grid.Row="7" Margin="0,5,0,5">
-            <Button Content="Space" Tag=" " Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="50" ToolTip="Add space"/>
-            <Button Content="Comma" Tag="," Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="50" ToolTip="Add comma"/>
-            <Button Content="Newline" Tag="\n" Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="60" ToolTip="Add \n"/>
-            <Button Content="Tab" Tag="\t" Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="40" ToolTip="Add \t"/>
-            <Button Content="|" Tag="|" Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="30" ToolTip="Add pipe"/>
-            <Button Content="-" Tag="-" Click="AddSeparator_Click" Margin="0,0,5,0" Padding="5,2" MinWidth="30" ToolTip="Add dash"/>
-            <Button Content="Clear" Click="ClearSeparator_Click" Margin="5,0,0,0" Padding="5,2" MinWidth="50" Background="#DC3545" Foreground="White" ToolTip="Clear separator"/>
+            <Button Content="Space" cal:Message.Attach="AddSeparator(' ')" Margin="0,0,5,0" Padding="5,2" MinWidth="50" ToolTip="Add space"/>
+            <Button Content="Comma" cal:Message.Attach="AddSeparator(',')" Margin="0,0,5,0" Padding="5,2" MinWidth="50" ToolTip="Add comma"/>
+            <Button Content="Newline" cal:Message.Attach="AddSeparator('\n')" Margin="0,0,5,0" Padding="5,2" MinWidth="60" ToolTip="Add \n"/>
+            <Button Content="Tab" cal:Message.Attach="AddSeparator('\t')" Margin="0,0,5,0" Padding="5,2" MinWidth="40" ToolTip="Add \t"/>
+            <Button Content="|" cal:Message.Attach="AddSeparator('|')" Margin="0,0,5,0" Padding="5,2" MinWidth="30" ToolTip="Add pipe"/>
+            <Button Content="-" cal:Message.Attach="AddSeparator('-')" Margin="0,0,5,0" Padding="5,2" MinWidth="30" ToolTip="Add dash"/>
+            <Button Content="Clear" cal:Message.Attach="ClearSeparator" Margin="5,0,0,0" Padding="5,2" MinWidth="50" Background="#DC3545" Foreground="White" ToolTip="Clear separator"/>
         </WrapPanel>
 
         <ComboBox Grid.Row="8" Text="{Binding Separator, UpdateSourceTrigger=PropertyChanged}" 

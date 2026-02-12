@@ -24,26 +24,5 @@ namespace JmesPathWpfDemo.Views
             DialogResult = false;
             Close();
         }
-
-        private void AddSeparator_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is string separator)
-            {
-                var vm = DataContext as JmesPathWpfDemo.ViewModels.BatchQueryViewModel;
-                if (vm != null)
-                {
-                    vm.Separator += separator;
-                }
-            }
-        }
-
-        private void ClearSeparator_Click(object sender, RoutedEventArgs e)
-        {
-            var vm = DataContext as JmesPathWpfDemo.ViewModels.BatchQueryViewModel;
-            if (vm != null)
-            {
-                vm.Separator = string.Empty;
-            }
-        }
     }
 }

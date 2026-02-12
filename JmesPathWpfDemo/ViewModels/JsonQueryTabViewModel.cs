@@ -324,6 +324,13 @@ namespace JmesPathWpfDemo.ViewModels
             }
         }
 
+        public void ClearArraySort(JsonTreeNode node)
+        {
+            if (node == null) return;
+            node.SortKey = null;
+            node.SortAscending = true;
+        }
+
         public void OnNodeSelected(JsonTreeNode node)
         {
             if (node == null) return;

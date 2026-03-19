@@ -4,6 +4,21 @@
              xmlns:cal="http://caliburnmicro.com">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <ContextMenu x:Key="XmlNodeContextMenu" 
+                     cal:Action.TargetWithoutContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+            <MenuItem Header="Generate filter Query..."
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateArrayFilterQuery($dataContext)">
+            </MenuItem>
+            <MenuItem Header="Generate map Query..."
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateMapQuery($dataContext)">
+            </MenuItem>
+            <MenuItem Header="Generate join Query..."
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateJoinQuery($dataContext)">
+            </MenuItem>
+        </ContextMenu>
     </UserControl.Resources>
 
     <Grid Margin="15">
@@ -101,6 +116,8 @@
                                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                                     <Setter Property="FontFamily" Value="Consolas"/>
                                     <Setter Property="FontSize" Value="12"/>
+                                    <Setter Property="ContextMenu" Value="{StaticResource XmlNodeContextMenu}"/>
+                                    <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TreeViewItem_PreviewMouseLeftButtonDown"/>
                                     <!-- Use Tag or direct Event binding in view behind if needed. In MVVM we can use Caliburn attached event or code behind. -->
                                 </Style>

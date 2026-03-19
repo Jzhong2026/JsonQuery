@@ -6,6 +6,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
+using System.Linq;
 using System.Windows;
 using System.Xml;
 
@@ -134,6 +135,166 @@ namespace JmesPathWpfDemo.ViewModels
             Query = node.Path;
         }
 
+        public void GenerateArrayFilterQuery(XmlTreeNode node)
+        {
+            if (node == null) return;
+
+            var map = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                var doc = new XmlDocument();
+                doc.LoadXml(XmlInput);
+                var xmlNodes = doc.SelectNodes(node.Path);
+                if (xmlNodes != null)
+                {
+                    foreach (XmlNode n in xmlNodes)
+                    {
+                        if (n.Attributes != null)
+                        {
+                            foreach (XmlAttribute attr in n.Attributes)
+                            {
+                                var key = "@" + attr.Name;
+                                if (!map.ContainsKey(key)) map[key] = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                map[key].Add(attr.Value ?? string.Empty);
+                            }
+                        }
+
+                        foreach (XmlNode child in n.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && (child.ChildNodes.Count == 0 || (child.ChildNodes.Count == 1 && child.FirstChild.NodeType == XmlNodeType.Text)))
+                            {
+                                var key = child.Name;
+                                if (!map.ContainsKey(key)) map[key] = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                map[key].Add(child.InnerText ?? string.Empty);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            var propertyValues = map.OrderBy(kvp => kvp.Key)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.OrderBy(v => v).ToList(), StringComparer.OrdinalIgnoreCase);
+
+            if (propertyValues.Count == 0)
+            {
+                System.Windows.MessageBox.Show("No simple properties found to filter in this node or its siblings.", "Array Filter",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new Views.ArrayFilterDialog(propertyValues);
+            dialog.Owner = System.Windows.Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var filterProp = dialog.SelectedFilterProperty;
+                var filterValue = dialog.SelectedFilterValue;
+                var returnProp = dialog.SelectedReturnProperty;
+
+                var query = $"{node.Path}[{filterProp}='{filterValue}']";
+
+                if (!string.IsNullOrWhiteSpace(returnProp) && returnProp != "(Whole item)")
+                {
+                    query = $"{query}/{returnProp}";
+                }
+
+                Query = query;
+            }
+        }
+
+        public void GenerateJoinQuery(XmlTreeNode node)
+        {
+            if (node == null) return;
+
+            var properties = new System.Collections.Generic.HashSet<string>();
+            try
+            {
+                var doc = new XmlDocument();
+                doc.LoadXml(XmlInput);
+                var xmlNodes = doc.SelectNodes(node.Path);
+                if (xmlNodes != null)
+                {
+                    foreach (XmlNode n in xmlNodes)
+                    {
+                        if (n.Attributes != null)
+                        {
+                            foreach (XmlAttribute attr in n.Attributes) properties.Add("@" + attr.Name);
+                        }
+                        foreach (XmlNode child in n.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && (child.ChildNodes.Count == 0 || (child.ChildNodes.Count == 1 && child.FirstChild.NodeType == XmlNodeType.Text)))
+                            {
+                                properties.Add(child.Name);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            var propsList = properties.OrderBy(x => x).ToList();
+            if (propsList.Count == 0) return;
+
+            var dialog = new Views.JoinQueryDialog(propsList, new System.Collections.Generic.List<Models.SavedQuery>());
+            dialog.Owner = System.Windows.Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var prop = dialog.SelectedProperty;
+                var sep = dialog.SelectedSeparator ?? ", ";
+
+                Query = $"string-join({node.Path}/{prop}, '{sep}')";
+            }
+        }
+
+        public void GenerateMapQuery(XmlTreeNode node)
+        {
+            if (node == null) return;
+
+            var properties = new System.Collections.Generic.HashSet<string>();
+            try
+            {
+                var doc = new XmlDocument();
+                doc.LoadXml(XmlInput);
+                var xmlNodes = doc.SelectNodes(node.Path);
+                if (xmlNodes != null)
+                {
+                    foreach (XmlNode n in xmlNodes)
+                    {
+                        if (n.Attributes != null)
+                        {
+                            foreach (XmlAttribute attr in n.Attributes) properties.Add("@" + attr.Name);
+                        }
+                        foreach (XmlNode child in n.ChildNodes)
+                        {
+                            if (child.NodeType == XmlNodeType.Element && (child.ChildNodes.Count == 0 || (child.ChildNodes.Count == 1 && child.FirstChild.NodeType == XmlNodeType.Text)))
+                            {
+                                properties.Add(child.Name);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            var propsList = properties.OrderBy(x => x).ToList();
+            if (propsList.Count == 0) return;
+
+            // Reuse JoinQueryDialog as a generic property selector for map
+            var dialog = new Views.JoinQueryDialog(propsList, new System.Collections.Generic.List<Models.SavedQuery>());
+            dialog.Title = "Map Query (Select Property to Map)";
+            dialog.Owner = System.Windows.Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var prop = dialog.SelectedProperty;
+
+                Query = $"{node.Path}/{prop}";
+            }
+        }
+
         public void RefreshTree()
         {
             RefreshXmlTree();
@@ -141,7 +302,15 @@ namespace JmesPathWpfDemo.ViewModels
 
         private void RefreshXmlTree()
         {
-            XmlTreeNodes = _treeBuilder.BuildTree(XmlInput);
+            var nodes = _treeBuilder.BuildTree(XmlInput);
+            if (nodes != null)
+            {
+                foreach (var node in nodes)
+                {
+                    node.IsExpanded = true;
+                }
+            }
+            XmlTreeNodes = nodes;
         }
 
         public void Execute()
@@ -157,25 +326,46 @@ namespace JmesPathWpfDemo.ViewModels
                 var doc = new XmlDocument();
                 doc.LoadXml(XmlInput);
 
-                var selectedNodes = doc.SelectNodes(Query);
-                if (selectedNodes == null || selectedNodes.Count == 0)
-                {
-                    Result = "No elements found.";
-                    return;
-                }
+                var nav = doc.CreateNavigator();
+                var result = nav.Evaluate(Query);
 
-                using (var stringWriter = new StringWriter())
-                using (var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings { Indent = true }))
+                if (result is System.Xml.XPath.XPathNodeIterator iterator)
                 {
-                    xmlWriter.WriteStartElement("Results");
-                    foreach (XmlNode node in selectedNodes)
+                    if (iterator.Count == 0)
                     {
-                        node.WriteTo(xmlWriter);
+                        Result = "No elements found.";
+                        return;
                     }
-                    xmlWriter.WriteEndElement();
-                    xmlWriter.Flush();
 
-                    Result = stringWriter.GetStringBuilder().ToString();
+                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                    while (iterator.MoveNext())
+                    {
+                        // Use InnerXml to omit wrapper tags, fallback to Value for attributes/text 
+                        string content = string.IsNullOrEmpty(iterator.Current.InnerXml) ? iterator.Current.Value : iterator.Current.InnerXml;
+                        sb.Append(content);
+                        if (iterator.CurrentPosition != iterator.Count)
+                        {
+                            sb.AppendLine();
+                        }
+                    }
+
+                    Result = sb.ToString();
+                }
+                else if (result is System.Xml.XPath.XPathNavigator navResult)
+                {
+                    try
+                    {
+                        Result = navResult.ValueAsDateTime.ToString();
+                    }
+                    catch (Exception)
+                    {
+                        Result = navResult.Value;
+                    }
+                }
+                else
+                {
+                    // It's a scalar value (e.g. string, number, boolean) from functions like count(), string()
+                    Result = result != null ? result.ToString() : "null";
                 }
             }
             catch (Exception ex)

@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 
@@ -287,6 +288,41 @@ namespace JmesPathWpfDemo.ViewModels
             }
         }
 
+        public void GenerateArrayFilterQuery(JsonTreeNode node)
+        {
+            if (node == null || !node.IsArray || !node.HasChildren) return;
+
+            var propertyValues = BuildFilterPropertyValues(node);
+            if (propertyValues.Count == 0)
+            {
+                MessageBox.Show("No simple properties found to filter in this array.", "Array Filter",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new ArrayFilterDialog(propertyValues);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var sortedPath = GetSortedPath(node);
+            var arrayPath = sortedPath.Contains("|") ? $"({sortedPath})" : sortedPath;
+            var filterPropertyExpression = BuildFilterPropertyExpression(dialog.SelectedFilterProperty);
+            var filterValueExpression = BuildJmesLiteral(dialog.SelectedFilterValue);
+            var query = $"{arrayPath}[?{filterPropertyExpression} == {filterValueExpression}] | [0]";
+
+            if (!string.IsNullOrWhiteSpace(dialog.SelectedReturnProperty))
+            {
+                var access = BuildObjectMemberAccess(dialog.SelectedReturnProperty);
+                query = $"{query}{access}";
+            }
+
+            Query = query;
+        }
+
         public void GenerateMapQuery(JsonTreeNode node)
         {
             if (node == null || !node.IsArray) return;
@@ -556,6 +592,123 @@ namespace JmesPathWpfDemo.ViewModels
                 }
             }
             return keys;
+        }
+
+        private Dictionary<string, List<string>> BuildFilterPropertyValues(JsonTreeNode arrayNode)
+        {
+            var map = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in arrayNode.Children)
+            {
+                if (!item.HasChildren)
+                {
+                    continue;
+                }
+
+                foreach (var property in item.Children)
+                {
+                    if (property.HasChildren || string.IsNullOrWhiteSpace(property.Key))
+                    {
+                        continue;
+                    }
+
+                    if (!map.TryGetValue(property.Key, out var values))
+                    {
+                        values = new HashSet<string>(StringComparer.Ordinal);
+                        map[property.Key] = values;
+                    }
+
+                    values.Add(property.Value ?? "null");
+                }
+            }
+
+            return map
+                .OrderBy(kvp => kvp.Key)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value.OrderBy(v => v).ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        private string BuildFilterPropertyExpression(string propertyName)
+        {
+            if (IsSimpleIdentifier(propertyName))
+            {
+                return propertyName;
+            }
+
+            return $"@{BuildBracketAccessor(propertyName)}";
+        }
+
+        private string BuildObjectMemberAccess(string propertyName)
+        {
+            if (IsSimpleIdentifier(propertyName))
+            {
+                return $".{propertyName}";
+            }
+
+            return BuildBracketAccessor(propertyName);
+        }
+
+        private static string BuildBracketAccessor(string propertyName)
+        {
+            var escaped = propertyName
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"");
+            return $"[\"{escaped}\"]";
+        }
+
+        private static bool IsSimpleIdentifier(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            if (!(char.IsLetter(value[0]) || value[0] == '_'))
+            {
+                return false;
+            }
+
+            for (int i = 1; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (!(char.IsLetterOrDigit(c) || c == '_'))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string BuildJmesLiteral(string value)
+        {
+            if (value == null || value.Equals("null", StringComparison.OrdinalIgnoreCase))
+            {
+                return "null";
+            }
+
+            if (bool.TryParse(value, out var boolValue))
+            {
+                return boolValue ? "true" : "false";
+            }
+
+            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+            {
+                return value;
+            }
+
+            if (double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var currentCultureNumber))
+            {
+                return currentCultureNumber.ToString(CultureInfo.InvariantCulture);
+            }
+
+            var escaped = value
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'");
+
+            return $"'{escaped}'";
         }
 
         private string DetectDateFormat(string dateString)

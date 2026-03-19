@@ -69,6 +69,19 @@ namespace JmesPathWpfDemo.Jmes
 				var sourceTimeZone = ConvertTimeZone(fromTimezone, TimeZoneInfo.Utc);
 				var targetTimeZone = ConvertTimeZone(toTimezone, TimeZoneInfo.Local);
 
+				// Set the Kind based on source timezone
+				if (parsedDateTime.Kind == DateTimeKind.Unspecified)
+				{
+					if (sourceTimeZone.Equals(TimeZoneInfo.Utc))
+					{
+						parsedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Utc);
+					}
+					else if (sourceTimeZone.Equals(TimeZoneInfo.Local))
+					{
+						parsedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Local);
+					}
+				}
+
 				DateTime convertedDateTime;
 
 				if (parsedDateTime.Kind != DateTimeKind.Unspecified)

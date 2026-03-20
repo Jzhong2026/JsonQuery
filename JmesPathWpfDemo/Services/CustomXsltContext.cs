@@ -17,6 +17,10 @@ namespace JmesPathWpfDemo.Services
             {
                 return new SortFunction();
             }
+            if (name == "sortby")
+            {
+                return new SortByFunction();
+            }
             return null;
         }
 
@@ -114,6 +118,69 @@ namespace JmesPathWpfDemo.Services
                 string valB = GetSortValue(b, sortKey);
                 
                 // Try numeric sort if both parse as double
+                if (double.TryParse(valA, out double numA) && double.TryParse(valB, out double numB))
+                {
+                    return isAsc ? numA.CompareTo(numB) : numB.CompareTo(numA);
+                }
+
+                int cmp = string.Compare(valA, valB, StringComparison.OrdinalIgnoreCase);
+                return isAsc ? cmp : -cmp;
+            });
+
+            return new NodeIteratorList(nodes);
+        }
+
+        private string GetSortValue(XPathNavigator nav, string key)
+        {
+            if (string.IsNullOrEmpty(key)) return nav.Value;
+
+            var clone = nav.Clone();
+            if (key.StartsWith("@"))
+            {
+                string attrName = key.Substring(1);
+                if (clone.MoveToAttribute(attrName, string.Empty))
+                    return clone.Value;
+            }
+            else
+            {
+                if (clone.MoveToChild(key, string.Empty))
+                    return clone.Value;
+            }
+            return string.Empty;
+        }
+    }
+
+    public class SortByFunction : IXsltContextFunction
+    {
+        public int Minargs => 2;
+        public int Maxargs => 3;
+
+        public XPathResultType ReturnType => XPathResultType.NodeSet;
+
+        public XPathResultType[] ArgTypes => new[] { XPathResultType.NodeSet, XPathResultType.String, XPathResultType.String };
+
+        public object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
+        {
+            if (args == null || args.Length < 2) return null;
+
+            var iterator = args[0] as XPathNodeIterator;
+            if (iterator == null) return null;
+
+            string sortKey = args[1]?.ToString();
+            string sortOrder = args.Length > 2 ? (args[2]?.ToString()?.ToLower() ?? "asc") : "asc";
+            bool isAsc = sortOrder != "desc";
+
+            var nodes = new List<XPathNavigator>();
+            while (iterator.MoveNext())
+            {
+                nodes.Add(iterator.Current.Clone());
+            }
+
+            nodes.Sort((a, b) =>
+            {
+                string valA = GetSortValue(a, sortKey);
+                string valB = GetSortValue(b, sortKey);
+
                 if (double.TryParse(valA, out double numA) && double.TryParse(valB, out double numB))
                 {
                     return isAsc ? numA.CompareTo(numB) : numB.CompareTo(numA);

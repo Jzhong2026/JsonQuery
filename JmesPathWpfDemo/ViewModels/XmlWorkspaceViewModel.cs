@@ -455,7 +455,7 @@ namespace JmesPathWpfDemo.ViewModels
                 {
                     string arrayExpr = string.IsNullOrEmpty(expr) ? $"/{stepName}" : $"{expr}/{stepName}";
                     string order = step.SortAscending ? "asc" : "desc";
-                    expr = $"sort({arrayExpr}, '{step.SortKey}', '{order}')";
+                    expr = $"sortby({arrayExpr}, '{step.SortKey}', '{order}')";
 
                     if (!omitThisIndex) {
                         expr = $"{expr}[{index}]"; 

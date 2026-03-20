@@ -390,6 +390,29 @@ namespace JmesPathWpfDemo.ViewModels
             RefreshXmlTree();
         }
 
+        // Show dialog to generate a todatetime query for a non-array node
+        public void ShowToDateTimeDialog(XmlTreeNode node)
+        {
+            if (node == null || node.IsArray) return;
+
+            // Prompt user for format, from-tz, to-tz (simple input dialog for now)
+            var inputDialog = new Views.ToDateTimeDialog();
+            inputDialog.Owner = System.Windows.Application.Current.MainWindow;
+            if (inputDialog.ShowDialog() == true)
+            {
+                var format = inputDialog.Format;
+                var fromTz = inputDialog.FromTimeZone;
+                var toTz = inputDialog.ToTimeZone;
+                var path = GetSortedPath(node);
+                var query = $"todatetime({path}"
+                    + (string.IsNullOrWhiteSpace(format) ? "" : $", '{format}'")
+                    + (string.IsNullOrWhiteSpace(fromTz) ? "" : $", '{fromTz}'")
+                    + (string.IsNullOrWhiteSpace(toTz) ? "" : $", '{toTz}'")
+                    + ")";
+                Query = query;
+            }
+        }
+
         private class NumericStringComparer : System.Collections.Generic.IComparer<string>
         {
             public int Compare(string x, string y)

@@ -81,6 +81,17 @@ namespace JmesPathWpfDemo.Models
         public bool HasChildren => Children != null && Children.Count > 0;
         public bool HasAttributes => Attributes != null && Attributes.Count > 0;
 
+        // Determines if this node is an array (i.e., has siblings with the same name)
+        public bool IsArray
+        {
+            get
+            {
+                if (Parent == null) return false;
+                var siblings = Parent.Children?.Where(c => c.Name == this.Name).ToList();
+                return siblings != null && siblings.Count > 1;
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName = null)

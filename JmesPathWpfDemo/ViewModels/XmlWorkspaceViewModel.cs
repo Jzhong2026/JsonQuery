@@ -33,7 +33,7 @@ namespace JmesPathWpfDemo.ViewModels
 
                 if (!File.Exists(samplePath))
                 {
-                    var projectDir = Path.GetFullPath(Path.Combine(assemblyDirectory, @"..\..\.."));
+                    var projectDir = Path.GetFullPath(Path.Combine(assemblyLocation, @"..\..\.."));
                     var projectSamplePath = Path.Combine(projectDir, "sample.json");
                     if (File.Exists(projectSamplePath))
                     {
@@ -132,7 +132,7 @@ namespace JmesPathWpfDemo.ViewModels
         public void OnNodeSelected(XmlTreeNode node)
         {
             if (node == null) return;
-            Query = node.Path;
+            Query = GetSortedPath(node);
         }
 
         public void GenerateArrayFilterQuery(XmlTreeNode node)
@@ -210,7 +210,8 @@ namespace JmesPathWpfDemo.ViewModels
                     var filterValue = dialog.SelectedFilterValue;
                     var returnProp = dialog.SelectedReturnProperty;
 
-                    var query = $"{targetPath}[{filterProp}='{filterValue}']";
+                    var queryPath = GetSortedPath(targetNode, omitLastIndex: true);
+                    var query = $"{queryPath}[{filterProp}='{filterValue}']";
 
                     if (!string.IsNullOrWhiteSpace(returnProp) && returnProp != "(Whole item)")
                     {
@@ -230,18 +231,15 @@ namespace JmesPathWpfDemo.ViewModels
         {
             if (node == null) return;
 
-            string targetPath = "";
             var properties = new System.Collections.Generic.HashSet<string>();
+            var targetNode = node;
+            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
+            {
+                targetNode = targetNode.Parent;
+            }
+
             try
             {
-                var targetNode = node;
-                if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
-                {
-                    targetNode = targetNode.Parent;
-                }
-                
-                targetPath = targetNode.Parent != null ? $"{targetNode.Parent.Path}/{targetNode.Name}" : $"/{targetNode.Name}";
-
                 var siblings = targetNode.Parent != null
                     ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
                     : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
@@ -280,8 +278,206 @@ namespace JmesPathWpfDemo.ViewModels
                 var prop = dialog.SelectedProperty;
                 var sep = dialog.SelectedSeparator ?? ", ";
 
-                Query = $"join({targetPath}/{prop}, '{sep}')";
+                var queryPath = GetSortedPath(targetNode, omitLastIndex: true);
+
+                Query = $"join({queryPath}/{prop}, '{sep}')";
             }
+        }
+
+        public void ConfigureArraySort(XmlTreeNode node)
+        {
+            if (node == null) return;
+
+            var targetNode = node;
+            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
+            {
+                targetNode = targetNode.Parent;
+            }
+
+            var siblings = targetNode.Parent != null
+                ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
+                : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
+
+            // For XML, any repeating element is naturally an array
+            if (siblings.Count == 0 && targetNode.Parent == null) return;
+
+            var sortKeys = new System.Collections.Generic.List<string>();
+            var firstItem = siblings.FirstOrDefault();
+            if (firstItem != null)
+            {
+                foreach (var attr in firstItem.Attributes)
+                {
+                    var key = attr.Name;
+                    if (!key.StartsWith("@")) key = "@" + key;
+                    sortKeys.Add(key);
+                }
+                foreach (var child in firstItem.Children)
+                {
+                    if (child.Children.Count == 0)
+                        sortKeys.Add(child.Name);
+                }
+            }
+
+            if (sortKeys.Count == 0)
+            {
+                System.Windows.MessageBox.Show("No sortable properties found in array items.", "Array Sort",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new Views.ArraySortDialog(sortKeys, targetNode.SortKey, targetNode.SortAscending);
+            dialog.Owner = System.Windows.Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                foreach (var sibling in siblings)
+                {
+                    sibling.SortKey = dialog.SelectedSortKey;
+                    sibling.SortAscending = dialog.SortAscending;
+                }
+
+                if (targetNode.Parent != null)
+                {
+                    var parent = targetNode.Parent;
+                    var sortedChildren = dialog.SortAscending 
+                        ? siblings.OrderBy(s => GetNodeSortValue(s, dialog.SelectedSortKey), new NumericStringComparer()).ToList()
+                        : siblings.OrderByDescending(s => GetNodeSortValue(s, dialog.SelectedSortKey), new NumericStringComparer()).ToList();
+
+                    int firstIdx = parent.Children.IndexOf(siblings.First());
+                    foreach(var sibling in siblings) {
+                        parent.Children.Remove(sibling);
+                    }
+                    for(int i = 0; i < sortedChildren.Count; i++) {
+                        parent.Children.Insert(firstIdx + i, sortedChildren[i]);
+                    }
+                }
+
+                var wasSelected = node.IsSelected;
+                if (wasSelected)
+                {
+                    node.IsSelected = false;
+                    node.IsSelected = true;
+                }
+                else
+                {
+                    node.IsSelected = true;
+                }
+
+                Query = GetSortedPath(targetNode, omitLastIndex: true);
+            }
+        }
+
+        public void ClearArraySort(XmlTreeNode node)
+        {
+            if (node == null) return;
+            var targetNode = node;
+            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
+            {
+                targetNode = targetNode.Parent;
+            }
+
+            var siblings = targetNode.Parent != null
+                ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
+                : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
+
+            foreach (var sibling in siblings)
+            {
+                sibling.SortKey = null;
+                sibling.SortAscending = true;
+            }
+
+            Query = GetSortedPath(targetNode, omitLastIndex: true);
+            RefreshXmlTree();
+        }
+
+        private class NumericStringComparer : System.Collections.Generic.IComparer<string>
+        {
+            public int Compare(string x, string y)
+            {
+                if (double.TryParse(x, out double numX) && double.TryParse(y, out double numY))
+                {
+                    return numX.CompareTo(numY);
+                }
+                return string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private string GetNodeSortValue(XmlTreeNode node, string sortKey)
+        {
+            if (string.IsNullOrEmpty(sortKey)) return node.Value ?? "";
+            if (sortKey.StartsWith("@"))
+            {
+                var attr = node.Attributes.FirstOrDefault(a => a.Name == sortKey);
+                return attr?.Value ?? "";
+            }
+            else
+            {
+                var child = node.Children.FirstOrDefault(c => c.Name == sortKey);
+                return child?.Value ?? "";
+            }
+        }
+
+        private string GetSortedPath(XmlTreeNode node, bool omitLastIndex = false)
+        {
+            if (node == null) return "";
+
+            var steps = new System.Collections.Generic.List<XmlTreeNode>();
+            var current = node;
+
+            while (current != null)
+            {
+                steps.Insert(0, current);
+                current = current.Parent;
+            }
+
+            string expr = "";
+
+            for (int i = 0; i < steps.Count; i++)
+            {
+                var step = steps[i];
+                string stepName = step.Name;
+                bool isArrayElement = false;
+                int index = 1;
+
+                if (step.Parent != null)
+                {
+                    var siblings = step.Parent.Children.Where(c => c.Name == step.Name).ToList();
+                    if (siblings.Count > 1)
+                    {
+                        isArrayElement = true;
+                        index = siblings.IndexOf(step) + 1;
+                    }
+                }
+
+                bool omitThisIndex = (omitLastIndex && i == steps.Count - 1);
+
+                if (step.HasSortApplied && isArrayElement)
+                {
+                    string arrayExpr = string.IsNullOrEmpty(expr) ? $"/{stepName}" : $"{expr}/{stepName}";
+                    string order = step.SortAscending ? "asc" : "desc";
+                    expr = $"sort({arrayExpr}, '{step.SortKey}', '{order}')";
+
+                    if (!omitThisIndex) {
+                        expr = $"{expr}[{index}]"; 
+                    }
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(expr)) {
+                        expr = "/" + stepName;
+                    } else if (stepName.StartsWith("@")) {
+                        expr = expr + "/" + stepName;
+                    } else {
+                        expr = expr + "/" + stepName;
+                    }
+
+                    if (isArrayElement && !omitThisIndex) {
+                        expr = expr + $"[{index}]";
+                    }
+                }
+            }
+
+            return expr;
         }
 
         public void RefreshTree()

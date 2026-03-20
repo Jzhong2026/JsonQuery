@@ -13,6 +13,10 @@ namespace JmesPathWpfDemo.Services
             {
                 return new StringJoinFunction();
             }
+            if (name == "sort")
+            {
+                return new SortFunction();
+            }
             return null;
         }
 
@@ -76,5 +80,102 @@ namespace JmesPathWpfDemo.Services
 
             return string.Join(sep, values);
         }
+    }
+
+    public class SortFunction : IXsltContextFunction
+    {
+        public int Minargs => 3;
+        public int Maxargs => 3;
+
+        public XPathResultType ReturnType => XPathResultType.NodeSet;
+
+        public XPathResultType[] ArgTypes => new[] { XPathResultType.NodeSet, XPathResultType.String, XPathResultType.String };
+
+        public object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
+        {
+            if (args == null || args.Length < 3) return null;
+
+            var iterator = args[0] as XPathNodeIterator;
+            if (iterator == null) return null;
+
+            string sortKey = args[1]?.ToString();
+            string sortOrder = args[2]?.ToString()?.ToLower() ?? "asc";
+            bool isAsc = sortOrder != "desc";
+
+            var nodes = new List<XPathNavigator>();
+            while (iterator.MoveNext())
+            {
+                nodes.Add(iterator.Current.Clone());
+            }
+
+            nodes.Sort((a, b) =>
+            {
+                string valA = GetSortValue(a, sortKey);
+                string valB = GetSortValue(b, sortKey);
+                
+                // Try numeric sort if both parse as double
+                if (double.TryParse(valA, out double numA) && double.TryParse(valB, out double numB))
+                {
+                    return isAsc ? numA.CompareTo(numB) : numB.CompareTo(numA);
+                }
+
+                int cmp = string.Compare(valA, valB, StringComparison.OrdinalIgnoreCase);
+                return isAsc ? cmp : -cmp;
+            });
+
+            return new NodeIteratorList(nodes);
+        }
+
+        private string GetSortValue(XPathNavigator nav, string key)
+        {
+            if (string.IsNullOrEmpty(key)) return nav.Value;
+
+            var clone = nav.Clone();
+            if (key.StartsWith("@"))
+            {
+                string attrName = key.Substring(1);
+                if (clone.MoveToAttribute(attrName, string.Empty))
+                    return clone.Value;
+            }
+            else
+            {
+                if (clone.MoveToChild(key, string.Empty))
+                    return clone.Value;
+            }
+            return string.Empty;
+        }
+    }
+
+    public class NodeIteratorList : XPathNodeIterator
+    {
+        private List<XPathNavigator> _nodes;
+        private int _index;
+
+        public NodeIteratorList(List<XPathNavigator> nodes)
+        {
+            _nodes = nodes;
+            _index = -1;
+        }
+
+        public override XPathNodeIterator Clone()
+        {
+            return new NodeIteratorList(_nodes) { _index = this._index };
+        }
+
+        public override bool MoveNext()
+        {
+            if (_index + 1 < _nodes.Count)
+            {
+                _index++;
+                return true;
+            }
+            return false;
+        }
+
+        public override XPathNavigator Current => _index >= 0 && _index < _nodes.Count ? _nodes[_index] : null;
+
+        public override int CurrentPosition => _index + 1;
+
+        public override int Count => _nodes.Count;
     }
 }

@@ -8,6 +8,8 @@ namespace JmesPathWpfDemo.Models
     {
         private bool _isSelected;
         private bool _isExpanded;
+        private string _sortKey;
+        private bool _sortAscending = true;
 
         public string Name { get; set; }
         public string Value { get; set; }
@@ -19,6 +21,36 @@ namespace JmesPathWpfDemo.Models
 
         public ObservableCollection<XmlTreeNode> Children { get; set; } = new ObservableCollection<XmlTreeNode>();
         public ObservableCollection<XmlTreeNode> Attributes { get; set; } = new ObservableCollection<XmlTreeNode>();
+
+        public string SortKey
+        {
+            get => _sortKey;
+            set
+            {
+                if (_sortKey != value)
+                {
+                    _sortKey = value;
+                    OnPropertyChanged(nameof(SortKey));
+                    OnPropertyChanged(nameof(HasSortApplied));
+                }
+            }
+        }
+
+        public bool SortAscending
+        {
+            get => _sortAscending;
+            set
+            {
+                if (_sortAscending != value)
+                {
+                    _sortAscending = value;
+                    OnPropertyChanged(nameof(SortAscending));
+                    OnPropertyChanged(nameof(HasSortApplied));
+                }
+            }
+        }
+
+        public bool HasSortApplied => !string.IsNullOrEmpty(SortKey);
 
         public bool IsSelected
         {

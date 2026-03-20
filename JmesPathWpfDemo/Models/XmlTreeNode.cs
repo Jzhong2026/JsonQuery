@@ -15,6 +15,8 @@ namespace JmesPathWpfDemo.Models
 
         public bool HasValue => !string.IsNullOrEmpty(Value);
 
+        public XmlTreeNode Parent { get; set; }
+
         public ObservableCollection<XmlTreeNode> Children { get; set; } = new ObservableCollection<XmlTreeNode>();
         public ObservableCollection<XmlTreeNode> Attributes { get; set; } = new ObservableCollection<XmlTreeNode>();
 

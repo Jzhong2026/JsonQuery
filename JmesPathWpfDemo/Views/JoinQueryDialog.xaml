@@ -98,13 +98,13 @@
                     Content="OK"
                     Width="90"
                     Margin="0,0,10,0"
-                    cal:Message.Attach="OkButton_Click"
+                    Click="OkButton_Click"
                     Style="{StaticResource PrimaryButtonStyle}"
                     IsDefault="True"/>
             <Button x:Name="CancelButton"
                     Content="Cancel"
                     Width="90"
-                    cal:Message.Attach="CancelButton_Click"
+                    Click="CancelButton_Click"
                     Style="{StaticResource SecondaryButtonStyle}"
                     IsCancel="True"/>
         </StackPanel>

@@ -35,7 +35,30 @@ namespace JmesPathWpfDemo.Services
 
         private XmlTreeNode ProcessElement(XmlNode element, string currentPath)
         {
-            var nodePath = string.IsNullOrEmpty(currentPath) ? $"/{element.Name}" : $"{currentPath}/{element.Name}";
+            string nodePathPart = element.Name;
+            if (element.ParentNode != null)
+            {
+                int sameNameCount = 0;
+                int myIndex = 0;
+                foreach (XmlNode sibling in element.ParentNode.ChildNodes)
+                {
+                    if (sibling.NodeType == XmlNodeType.Element && sibling.Name == element.Name)
+                    {
+                        sameNameCount++;
+                        if (sibling == element)
+                        {
+                            myIndex = sameNameCount;
+                        }
+                    }
+                }
+
+                if (sameNameCount > 1)
+                {
+                    nodePathPart = $"{element.Name}[{myIndex}]";
+                }
+            }
+
+            var nodePath = string.IsNullOrEmpty(currentPath) ? $"/{nodePathPart}" : $"{currentPath}/{nodePathPart}";
             
             var node = new XmlTreeNode
             {
@@ -53,7 +76,8 @@ namespace JmesPathWpfDemo.Services
                     {
                         Name = $"@{attr.Name}",
                         Value = attr.Value,
-                        Path = attrPath
+                        Path = attrPath,
+                        Parent = node
                     });
                 }
             }
@@ -62,7 +86,9 @@ namespace JmesPathWpfDemo.Services
             {
                 if (child.NodeType == XmlNodeType.Element)
                 {
-                    node.Children.Add(ProcessElement(child, nodePath));
+                    var childNode = ProcessElement(child, nodePath);
+                    childNode.Parent = node;
+                    node.Children.Add(childNode);
                 }
             }
 

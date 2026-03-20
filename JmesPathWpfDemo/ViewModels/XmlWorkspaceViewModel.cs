@@ -139,68 +139,90 @@ namespace JmesPathWpfDemo.ViewModels
         {
             if (node == null) return;
 
+            var targetNode = node;
+
+            // If it's a leaf node/has no children/attributes, we likely want to filter the parent collection
+            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
+            {
+                targetNode = targetNode.Parent;
+            }
+
+            var targetPath = targetNode.Parent != null ? $"{targetNode.Parent.Path}/{targetNode.Name}" : $"/{targetNode.Name}";
+
             var map = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
-                var doc = new XmlDocument();
-                doc.LoadXml(XmlInput);
-                var xmlNodes = doc.SelectNodes(node.Path);
-                if (xmlNodes != null)
-                {
-                    foreach (XmlNode n in xmlNodes)
-                    {
-                        if (n.Attributes != null)
-                        {
-                            foreach (XmlAttribute attr in n.Attributes)
-                            {
-                                var key = "@" + attr.Name;
-                                if (!map.ContainsKey(key)) map[key] = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                                map[key].Add(attr.Value ?? string.Empty);
-                            }
-                        }
+                // Select items in the same level under the specified parent
+                var siblings = targetNode.Parent != null
+                    ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
+                    : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
 
-                        foreach (XmlNode child in n.ChildNodes)
+                foreach (var n in siblings)
+                {
+                    if (n.Attributes != null)
+                    {
+                        foreach (var attr in n.Attributes)
                         {
-                            if (child.NodeType == XmlNodeType.Element && (child.ChildNodes.Count == 0 || (child.ChildNodes.Count == 1 && child.FirstChild.NodeType == XmlNodeType.Text)))
+                            var key = attr.Name; // Already starts with '@' in XmlTreeBuilder
+                            if (!key.StartsWith("@")) key = "@" + key;
+
+                            if (!map.TryGetValue(key, out var values))
                             {
-                                var key = child.Name;
-                                if (!map.ContainsKey(key)) map[key] = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                                map[key].Add(child.InnerText ?? string.Empty);
+                                values = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                map[key] = values;
                             }
+                            values.Add(attr.Value ?? string.Empty);
+                        }
+                    }
+
+                    foreach (var child in n.Children)
+                    {
+                        if (child.Children.Count == 0)
+                        {
+                            var key = child.Name;
+                            if (!map.TryGetValue(key, out var values))
+                            {
+                                values = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                map[key] = values;
+                            }
+                            values.Add(child.Value ?? string.Empty);
                         }
                     }
                 }
-            }
-            catch { }
 
-            var propertyValues = map.OrderBy(kvp => kvp.Key)
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.OrderBy(v => v).ToList(), StringComparer.OrdinalIgnoreCase);
+                var propertyValues = map.OrderBy(kvp => kvp.Key)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.OrderBy(v => v).ToList(), StringComparer.OrdinalIgnoreCase);
 
-            if (propertyValues.Count == 0)
-            {
-                System.Windows.MessageBox.Show("No simple properties found to filter in this node or its siblings.", "Array Filter",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-                return;
-            }
-
-            var dialog = new Views.ArrayFilterDialog(propertyValues);
-            dialog.Owner = System.Windows.Application.Current.MainWindow;
-
-            if (dialog.ShowDialog() == true)
-            {
-                var filterProp = dialog.SelectedFilterProperty;
-                var filterValue = dialog.SelectedFilterValue;
-                var returnProp = dialog.SelectedReturnProperty;
-
-                var query = $"{node.Path}[{filterProp}='{filterValue}']";
-
-                if (!string.IsNullOrWhiteSpace(returnProp) && returnProp != "(Whole item)")
+                if (propertyValues.Count == 0)
                 {
-                    query = $"{query}/{returnProp}";
+                    System.Windows.MessageBox.Show("No simple properties found to filter in this node or its siblings.", "Array Filter",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    return;
                 }
 
-                Query = query;
+                var dialog = new Views.ArrayFilterDialog(propertyValues);
+                dialog.Owner = System.Windows.Application.Current.MainWindow;
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var filterProp = dialog.SelectedFilterProperty;
+                    var filterValue = dialog.SelectedFilterValue;
+                    var returnProp = dialog.SelectedReturnProperty;
+
+                    var query = $"{targetPath}[{filterProp}='{filterValue}']";
+
+                    if (!string.IsNullOrWhiteSpace(returnProp) && returnProp != "(Whole item)")
+                    {
+                        query = $"{query}/{returnProp}";
+                    }
+
+                    Query = query;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Error generating filter query: {ex.Message}");
             }
         }
 
@@ -208,26 +230,39 @@ namespace JmesPathWpfDemo.ViewModels
         {
             if (node == null) return;
 
+            string targetPath = "";
             var properties = new System.Collections.Generic.HashSet<string>();
             try
             {
-                var doc = new XmlDocument();
-                doc.LoadXml(XmlInput);
-                var xmlNodes = doc.SelectNodes(node.Path);
-                if (xmlNodes != null)
+                var targetNode = node;
+                if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
                 {
-                    foreach (XmlNode n in xmlNodes)
+                    targetNode = targetNode.Parent;
+                }
+                
+                targetPath = targetNode.Parent != null ? $"{targetNode.Parent.Path}/{targetNode.Name}" : $"/{targetNode.Name}";
+
+                var siblings = targetNode.Parent != null
+                    ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
+                    : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
+
+                foreach (var n in siblings)
+                {
+                    if (n.Attributes != null)
                     {
-                        if (n.Attributes != null)
+                        foreach (var attr in n.Attributes)
                         {
-                            foreach (XmlAttribute attr in n.Attributes) properties.Add("@" + attr.Name);
+                            var key = attr.Name;
+                            if (!key.StartsWith("@")) key = "@" + key;
+                            properties.Add(key);
                         }
-                        foreach (XmlNode child in n.ChildNodes)
+                    }
+
+                    foreach (var child in n.Children)
+                    {
+                        if (child.Children.Count == 0)
                         {
-                            if (child.NodeType == XmlNodeType.Element && (child.ChildNodes.Count == 0 || (child.ChildNodes.Count == 1 && child.FirstChild.NodeType == XmlNodeType.Text)))
-                            {
-                                properties.Add(child.Name);
-                            }
+                            properties.Add(child.Name);
                         }
                     }
                 }
@@ -245,53 +280,7 @@ namespace JmesPathWpfDemo.ViewModels
                 var prop = dialog.SelectedProperty;
                 var sep = dialog.SelectedSeparator ?? ", ";
 
-                Query = $"string-join({node.Path}/{prop}, '{sep}')";
-            }
-        }
-
-        public void GenerateMapQuery(XmlTreeNode node)
-        {
-            if (node == null) return;
-
-            var properties = new System.Collections.Generic.HashSet<string>();
-            try
-            {
-                var doc = new XmlDocument();
-                doc.LoadXml(XmlInput);
-                var xmlNodes = doc.SelectNodes(node.Path);
-                if (xmlNodes != null)
-                {
-                    foreach (XmlNode n in xmlNodes)
-                    {
-                        if (n.Attributes != null)
-                        {
-                            foreach (XmlAttribute attr in n.Attributes) properties.Add("@" + attr.Name);
-                        }
-                        foreach (XmlNode child in n.ChildNodes)
-                        {
-                            if (child.NodeType == XmlNodeType.Element && (child.ChildNodes.Count == 0 || (child.ChildNodes.Count == 1 && child.FirstChild.NodeType == XmlNodeType.Text)))
-                            {
-                                properties.Add(child.Name);
-                            }
-                        }
-                    }
-                }
-            }
-            catch { }
-
-            var propsList = properties.OrderBy(x => x).ToList();
-            if (propsList.Count == 0) return;
-
-            // Reuse JoinQueryDialog as a generic property selector for map
-            var dialog = new Views.JoinQueryDialog(propsList, new System.Collections.Generic.List<Models.SavedQuery>());
-            dialog.Title = "Map Query (Select Property to Map)";
-            dialog.Owner = System.Windows.Application.Current.MainWindow;
-
-            if (dialog.ShowDialog() == true)
-            {
-                var prop = dialog.SelectedProperty;
-
-                Query = $"{node.Path}/{prop}";
+                Query = $"join({targetPath}/{prop}, '{sep}')";
             }
         }
 
@@ -327,7 +316,9 @@ namespace JmesPathWpfDemo.ViewModels
                 doc.LoadXml(XmlInput);
 
                 var nav = doc.CreateNavigator();
-                var result = nav.Evaluate(Query);
+                var expr = nav.Compile(Query);
+                expr.SetContext(new CustomXsltContext());
+                var result = nav.Evaluate(expr);
 
                 if (result is System.Xml.XPath.XPathNodeIterator iterator)
                 {

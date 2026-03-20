@@ -10,10 +10,6 @@
                       DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                       cal:Message.Attach="GenerateArrayFilterQuery($dataContext)">
             </MenuItem>
-            <MenuItem Header="Generate map Query..."
-                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      cal:Message.Attach="GenerateMapQuery($dataContext)">
-            </MenuItem>
             <MenuItem Header="Generate join Query..."
                       DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                       cal:Message.Attach="GenerateJoinQuery($dataContext)">

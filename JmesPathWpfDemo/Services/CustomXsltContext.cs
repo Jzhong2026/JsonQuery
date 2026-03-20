@@ -267,26 +267,14 @@ namespace JmesPathWpfDemo.Services
                         dt = DateTime.SpecifyKind(dt, DateTimeKind.Local);
                 }
 
-                DateTime converted;
-                if (dt.Kind != DateTimeKind.Unspecified)
-                {
-                    converted = TimeZoneInfo.ConvertTimeFromUtc(dt.ToUniversalTime(), targetTz);
-                }
-                else if (sourceTz.Equals(TimeZoneInfo.Utc))
-                {
-                    converted = TimeZoneInfo.ConvertTimeFromUtc(dt.ToUniversalTime(), targetTz);
-                }
-                else if (targetTz.Equals(TimeZoneInfo.Utc))
-                {
-                    converted = TimeZoneInfo.ConvertTimeToUtc(dt, sourceTz);
-                }
-                else
-                {
-                    var utc = TimeZoneInfo.ConvertTimeToUtc(dt, sourceTz);
-                    converted = TimeZoneInfo.ConvertTimeFromUtc(utc, targetTz);
-                }
+                // Convert to UTC first, then to target timezone
+                DateTime utcTime = dt.Kind == DateTimeKind.Utc ? dt : TimeZoneInfo.ConvertTimeToUtc(dt, sourceTz);
+                DateTime targetTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, targetTz);
 
-                return converted.ToString("yyyy-MM-dd HH:mm:ss");
+                // Get the correct offset for the target timezone at that date
+                TimeSpan offset = targetTz.GetUtcOffset(targetTime);
+                var dto = new DateTimeOffset(targetTime, offset);
+                return dto.ToString("o");
             }
             catch
             {

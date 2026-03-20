@@ -102,8 +102,11 @@ namespace JmesPathWpfDemo.Jmes
 					convertedDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, targetTimeZone);
 				}
 
-				// Return simple format without timezone offset
-				return new JValue(convertedDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
+               // Return DateTimeOffset with offset (default: yyyy-MM-dd HH:mm:sszzz)
+               // Always output as ISO 8601 DateTimeOffset string (standard format)
+			   var offset = targetTimeZone.GetUtcOffset(convertedDateTime);
+			   var dto = new DateTimeOffset(convertedDateTime, offset);
+			   return new JValue(dto.ToString("yyyy-MM-ddTHH:mm:ss.fffzzz", CultureInfo.InvariantCulture));
 			}
 			catch (Exception)
 			{

@@ -12,6 +12,7 @@ namespace JmesPathWpfDemo.Models
 		private bool _isExpanded;
 		private string _sortKey;
 		private bool _sortAscending = true;
+		private string _filterExpression;
 		private List<JsonTreeNode> _originalChildrenOrder;
 
 		public string Key { get; set; }
@@ -97,9 +98,23 @@ namespace JmesPathWpfDemo.Models
 			}
 		}
 
+		public string FilterExpression
+		{
+			get => _filterExpression;
+			set
+			{
+				_filterExpression = value;
+				OnPropertyChanged();
+				OnPropertyChanged(nameof(HasFilterApplied));
+				OnPropertyChanged(nameof(DisplayText));
+				OnPropertyChanged(nameof(ValueText));
+			}
+		}
+
 		public bool IsArray => Type == "Array";
 		public bool HasChildren => Children != null && Children.Count > 0;
 		public bool HasSortApplied => !string.IsNullOrEmpty(SortKey);
+		public bool HasFilterApplied => !string.IsNullOrWhiteSpace(FilterExpression);
         public bool HasKey => !string.IsNullOrEmpty(Key);
 
 		public string DisplayText
@@ -138,13 +153,25 @@ namespace JmesPathWpfDemo.Models
             }
         }
 
+        public string FilterDescription
+        {
+            get
+            {
+                if (IsArray && HasFilterApplied)
+                {
+                    return " [Filtered]";
+                }
+                return string.Empty;
+            }
+        }
+
         public string ValueText
         {
             get
             {
                 if (HasChildren)
                 {
-                    return $"{Type}{SortDescription}";
+                    return $"{Type}{SortDescription}{FilterDescription}";
                 }
                 return Value;
             }

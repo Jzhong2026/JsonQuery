@@ -36,6 +36,24 @@
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
+            <MenuItem Header="Generate filter Query..."
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="GenerateFilterQuery($dataContext)">
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="IsEnabled" Value="{Binding IsArray}"/>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
+            <MenuItem Header="Clear Filter"
+                      DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                      cal:Message.Attach="ClearArrayFilter($dataContext)">
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="IsEnabled" Value="{Binding HasFilterApplied}"/>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
 
             <MenuItem Header="Functions">
                 <MenuItem Header="Math (Number)">

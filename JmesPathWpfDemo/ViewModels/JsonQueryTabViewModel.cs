@@ -27,6 +27,7 @@ namespace JmesPathWpfDemo.ViewModels
         private JsonTreeNode _currentSelectedNode;
         private bool _canClose;
         private readonly Action<string, string> _onCreateNewTab;
+        private readonly Dictionary<JsonTreeNode, List<JsonTreeNode>> _arrayFilterSnapshots = new();
 
         public JsonQueryTabViewModel(
             string title, 
@@ -302,6 +303,54 @@ namespace JmesPathWpfDemo.ViewModels
             }
         }
 
+        public void GenerateFilterQuery(JsonTreeNode node)
+        {
+            if (node == null || !node.IsArray || !node.HasChildren) return;
+
+            var filterableKeys = GetFilterableKeys(node);
+            if (filterableKeys.Count == 0)
+            {
+                MessageBox.Show("No filterable properties found in array items.", "Array Filter",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var propertyValues = GetFilterableValues(node, filterableKeys);
+            var dialog = new ArrayFilterDialog(filterableKeys, propertyValues);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FilterExpression))
+            {
+                ApplyArrayFilter(node, dialog.SelectedProperty, dialog.SelectedOperator, dialog.SelectedValueType, dialog.SelectedValue);
+                node.FilterExpression = dialog.FilterExpression;
+
+                var sortedPath = GetSortedPath(node);
+                Query = $"{sortedPath}[?{dialog.FilterExpression}]";
+            }
+        }
+
+        public void ClearArrayFilter(JsonTreeNode node)
+        {
+            if (node == null || !node.IsArray) return;
+
+            if (_arrayFilterSnapshots.TryGetValue(node, out var originalChildren))
+            {
+                node.Children.Clear();
+                foreach (var child in originalChildren)
+                {
+                    node.Children.Add(child);
+                }
+                _arrayFilterSnapshots.Remove(node);
+            }
+
+            node.FilterExpression = null;
+
+            if (_currentSelectedNode != null && (_currentSelectedNode == node || _currentSelectedNode.Path.StartsWith(node.Path)))
+            {
+                UpdateQueryWithNodeSort(_currentSelectedNode);
+            }
+        }
+
         public void GenerateFunctionQuery(JsonTreeNode node, string functionName)
         {
             if (node == null || string.IsNullOrEmpty(functionName)) return;
@@ -503,7 +552,7 @@ namespace JmesPathWpfDemo.ViewModels
 
         private void UpdateQueryWithNodeSort(JsonTreeNode node)
         {
-            Query = GetSortedPath(node);
+            Query = ApplyActiveArrayFilters(node, GetSortedPath(node));
         }
 
         private List<JsonTreeNode> FindArrayAncestorsWithSort(JsonTreeNode node)
@@ -542,6 +591,42 @@ namespace JmesPathWpfDemo.ViewModels
             return false;
         }
 
+        private List<JsonTreeNode> FindArrayAncestorsWithFilter(JsonTreeNode node)
+        {
+            var ancestors = new List<JsonTreeNode>();
+            FindArrayAncestorsWithFilterRecursive(JsonTreeNodes, node, ancestors);
+            return ancestors;
+        }
+
+        private bool FindArrayAncestorsWithFilterRecursive(ObservableCollection<JsonTreeNode> nodes, JsonTreeNode targetNode, List<JsonTreeNode> ancestors)
+        {
+            foreach (var node in nodes)
+            {
+                if (targetNode.Path.StartsWith(node.Path) && node.Path != targetNode.Path)
+                {
+                    if (node.IsArray && node.HasFilterApplied)
+                    {
+                        ancestors.Add(node);
+                    }
+
+                    if (node.HasChildren)
+                    {
+                        FindArrayAncestorsWithFilterRecursive(node.Children, targetNode, ancestors);
+                    }
+                    return true;
+                }
+
+                if (node.HasChildren)
+                {
+                    if (FindArrayAncestorsWithFilterRecursive(node.Children, targetNode, ancestors))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         private List<string> GetSortableKeys(JsonTreeNode node)
         {
             var keys = new List<string>();
@@ -556,6 +641,81 @@ namespace JmesPathWpfDemo.ViewModels
                 }
             }
             return keys;
+        }
+
+        private List<string> GetFilterableKeys(JsonTreeNode arrayNode)
+        {
+            var keys = new List<string>();
+            if (arrayNode?.HasChildren != true)
+            {
+                return keys;
+            }
+
+            var firstItem = arrayNode.Children.FirstOrDefault();
+            if (firstItem == null)
+            {
+                return keys;
+            }
+
+            if (!firstItem.HasChildren)
+            {
+                keys.Add("@");
+                return keys;
+            }
+
+            foreach (var child in firstItem.Children)
+            {
+                if (!string.IsNullOrWhiteSpace(child.Key))
+                {
+                    keys.Add(child.Key);
+                }
+            }
+
+            return keys;
+        }
+
+        private Dictionary<string, List<string>> GetFilterableValues(JsonTreeNode arrayNode, List<string> keys)
+        {
+            var result = new Dictionary<string, List<string>>();
+            if (arrayNode?.HasChildren != true || keys == null || keys.Count == 0)
+            {
+                return result;
+            }
+
+            foreach (var key in keys)
+            {
+                var values = new HashSet<string>();
+
+                foreach (var item in arrayNode.Children)
+                {
+                    if (key == "@")
+                    {
+                        if (!string.IsNullOrWhiteSpace(item.Value))
+                        {
+                            values.Add(item.Value);
+                        }
+                        continue;
+                    }
+
+                    if (!item.HasChildren) continue;
+
+                    var matched = item.Children.FirstOrDefault(c => c.Key == key);
+                    if (matched == null) continue;
+
+                    if (!matched.HasChildren)
+                    {
+                        values.Add(matched.Value ?? string.Empty);
+                    }
+                }
+
+                result[key] = values
+                    .Where(v => v != null)
+                    .OrderBy(v => v)
+                    .Take(200)
+                    .ToList();
+            }
+
+            return result;
         }
 
         private string DetectDateFormat(string dateString)
@@ -592,6 +752,7 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 var newTree = _treeBuilder.BuildTree(_jsonInput);
                 _currentSelectedNode = null;
+                _arrayFilterSnapshots.Clear();
                 JsonTreeNodes = newTree;
             }
             catch (Exception ex)
@@ -599,6 +760,196 @@ namespace JmesPathWpfDemo.ViewModels
                 System.Diagnostics.Debug.WriteLine($"RefreshJsonTree Error: {ex.Message}");
                 JsonTreeNodes = new ObservableCollection<JsonTreeNode>();
             }
+        }
+
+        private string ApplyActiveArrayFilters(JsonTreeNode selectedNode, string query)
+        {
+            if (selectedNode == null || string.IsNullOrWhiteSpace(query))
+            {
+                return query;
+            }
+
+            var filteredArrays = FindArrayAncestorsWithFilter(selectedNode);
+            if (selectedNode.IsArray && selectedNode.HasFilterApplied)
+            {
+                filteredArrays.Add(selectedNode);
+            }
+
+            if (filteredArrays.Count == 0)
+            {
+                return query;
+            }
+
+            foreach (var arrayNode in filteredArrays.OrderByDescending(a => a.Path.Length))
+            {
+                if (string.IsNullOrWhiteSpace(arrayNode.FilterExpression))
+                {
+                    continue;
+                }
+
+                query = ReplaceArrayPrefixWithFilter(query, arrayNode.Path, arrayNode.FilterExpression);
+            }
+
+            return query;
+        }
+
+        private string ReplaceArrayPrefixWithFilter(string query, string arrayPath, string filterExpression)
+        {
+            if (string.IsNullOrWhiteSpace(query) || string.IsNullOrWhiteSpace(arrayPath))
+            {
+                return query;
+            }
+
+            var targetPrefix = $"{arrayPath}[";
+            if (query.StartsWith(targetPrefix))
+            {
+                var closeIndex = query.IndexOf(']', targetPrefix.Length);
+                if (closeIndex > -1)
+                {
+                    var remainder = query.Substring(closeIndex + 1);
+                    return $"{arrayPath}[?{filterExpression}]{remainder}";
+                }
+            }
+
+            if (query.StartsWith(arrayPath))
+            {
+                var remainder = query.Substring(arrayPath.Length);
+                return $"{arrayPath}[?{filterExpression}]{remainder}";
+            }
+
+            return query;
+        }
+
+        private void ApplyArrayFilter(JsonTreeNode node, string property, string op, string valueType, string rawValue)
+        {
+            if (node == null || !node.IsArray)
+            {
+                return;
+            }
+
+            if (!_arrayFilterSnapshots.ContainsKey(node))
+            {
+                _arrayFilterSnapshots[node] = node.Children.ToList();
+            }
+
+            var source = _arrayFilterSnapshots[node];
+            var filtered = source.Where(item => IsItemMatch(item, property, op, valueType, rawValue)).ToList();
+
+            node.Children.Clear();
+            foreach (var item in filtered)
+            {
+                node.Children.Add(item);
+            }
+        }
+
+        private bool IsItemMatch(JsonTreeNode item, string property, string op, string valueType, string rawValue)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(op))
+            {
+                return false;
+            }
+
+            string itemType;
+            string itemValue;
+
+            if (property == "@")
+            {
+                itemType = item.Type;
+                itemValue = item.Value;
+            }
+            else
+            {
+                var match = item.Children?.FirstOrDefault(c => c.Key == property);
+                if (match == null)
+                {
+                    return false;
+                }
+
+                itemType = match.Type;
+                itemValue = match.Value;
+            }
+
+            if (op == "contains" || op == "starts_with" || op == "ends_with")
+            {
+                var text = itemValue ?? string.Empty;
+                var input = rawValue ?? string.Empty;
+
+                return op switch
+                {
+                    "contains" => text.IndexOf(input, StringComparison.OrdinalIgnoreCase) >= 0,
+                    "starts_with" => text.StartsWith(input, StringComparison.OrdinalIgnoreCase),
+                    "ends_with" => text.EndsWith(input, StringComparison.OrdinalIgnoreCase),
+                    _ => false
+                };
+            }
+
+            if (string.Equals(valueType, "Number", StringComparison.OrdinalIgnoreCase) || itemType == "Number")
+            {
+                if (double.TryParse(itemValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var left)
+                    && double.TryParse(rawValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var right))
+                {
+                    return CompareNumbers(left, right, op);
+                }
+                return false;
+            }
+
+            if (string.Equals(valueType, "Boolean", StringComparison.OrdinalIgnoreCase) || itemType == "Boolean")
+            {
+                if (bool.TryParse(itemValue, out var left) && bool.TryParse(rawValue, out var right))
+                {
+                    return op switch
+                    {
+                        "==" => left == right,
+                        "!=" => left != right,
+                        _ => false
+                    };
+                }
+                return false;
+            }
+
+            if (string.Equals(valueType, "Null", StringComparison.OrdinalIgnoreCase))
+            {
+                var isNull = string.Equals(itemType, "Null", StringComparison.OrdinalIgnoreCase)
+                             || string.Equals(itemValue, "null", StringComparison.OrdinalIgnoreCase)
+                             || itemValue == null;
+                return op switch
+                {
+                    "==" => isNull,
+                    "!=" => !isNull,
+                    _ => false
+                };
+            }
+
+            return CompareStrings(itemValue ?? string.Empty, rawValue ?? string.Empty, op);
+        }
+
+        private static bool CompareNumbers(double left, double right, string op)
+        {
+            return op switch
+            {
+                "==" => left == right,
+                "!=" => left != right,
+                ">" => left > right,
+                ">=" => left >= right,
+                "<" => left < right,
+                "<=" => left <= right,
+                _ => false
+            };
+        }
+
+        private static bool CompareStrings(string left, string right, string op)
+        {
+            var compare = string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+            return op switch
+            {
+                "==" => compare == 0,
+                "!=" => compare != 0,
+                ">" => compare > 0,
+                ">=" => compare >= 0,
+                "<" => compare < 0,
+                "<=" => compare <= 0,
+                _ => false
+            };
         }
     }
 }

@@ -903,7 +903,7 @@ namespace JmesPathWpfDemo.ViewModels
                 if (closeIndex > -1)
                 {
                     var remainder = query.Substring(closeIndex + 1);
-                    return $"{arrayPath}[?{filterExpression}]{remainder}";
+                    return $"{arrayPath}[?{filterExpression}] | [0]{remainder}";
                 }
             }
 

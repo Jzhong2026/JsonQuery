@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 
@@ -286,6 +287,41 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 Query = dialog.GeneratedQuery;
             }
+        }
+
+        public void GenerateArrayFilterQuery(JsonTreeNode node)
+        {
+            if (node == null || !node.IsArray || !node.HasChildren) return;
+
+            var propertyValues = BuildFilterPropertyValues(node);
+            if (propertyValues.Count == 0)
+            {
+                MessageBox.Show("No simple properties found to filter in this array.", "Array Filter",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new ArrayFilterDialog(propertyValues);
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var sortedPath = GetSortedPath(node);
+            var arrayPath = sortedPath.Contains("|") ? $"({sortedPath})" : sortedPath;
+            var filterPropertyExpression = BuildFilterPropertyExpression(dialog.SelectedFilterProperty);
+            var filterValueExpression = BuildJmesLiteral(dialog.SelectedFilterValue);
+            var query = $"{arrayPath}[?{filterPropertyExpression} == {filterValueExpression}] | [0]";
+
+            if (!string.IsNullOrWhiteSpace(dialog.SelectedReturnProperty))
+            {
+                var access = BuildObjectMemberAccess(dialog.SelectedReturnProperty);
+                query = $"{query}{access}";
+            }
+
+            Query = query;
         }
 
         public void GenerateMapQuery(JsonTreeNode node)
@@ -643,79 +679,121 @@ namespace JmesPathWpfDemo.ViewModels
             return keys;
         }
 
-        private List<string> GetFilterableKeys(JsonTreeNode arrayNode)
+        private Dictionary<string, List<string>> BuildFilterPropertyValues(JsonTreeNode arrayNode)
         {
-            var keys = new List<string>();
-            if (arrayNode?.HasChildren != true)
-            {
-                return keys;
-            }
+            var map = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
-            var firstItem = arrayNode.Children.FirstOrDefault();
-            if (firstItem == null)
+            foreach (var item in arrayNode.Children)
             {
-                return keys;
-            }
-
-            if (!firstItem.HasChildren)
-            {
-                keys.Add("@");
-                return keys;
-            }
-
-            foreach (var child in firstItem.Children)
-            {
-                if (!string.IsNullOrWhiteSpace(child.Key))
+                if (!item.HasChildren)
                 {
-                    keys.Add(child.Key);
+                    continue;
                 }
-            }
 
-            return keys;
-        }
-
-        private Dictionary<string, List<string>> GetFilterableValues(JsonTreeNode arrayNode, List<string> keys)
-        {
-            var result = new Dictionary<string, List<string>>();
-            if (arrayNode?.HasChildren != true || keys == null || keys.Count == 0)
-            {
-                return result;
-            }
-
-            foreach (var key in keys)
-            {
-                var values = new HashSet<string>();
-
-                foreach (var item in arrayNode.Children)
+                foreach (var property in item.Children)
                 {
-                    if (key == "@")
+                    if (property.HasChildren || string.IsNullOrWhiteSpace(property.Key))
                     {
-                        if (!string.IsNullOrWhiteSpace(item.Value))
-                        {
-                            values.Add(item.Value);
-                        }
                         continue;
                     }
 
-                    if (!item.HasChildren) continue;
-
-                    var matched = item.Children.FirstOrDefault(c => c.Key == key);
-                    if (matched == null) continue;
-
-                    if (!matched.HasChildren)
+                    if (!map.TryGetValue(property.Key, out var values))
                     {
-                        values.Add(matched.Value ?? string.Empty);
+                        values = new HashSet<string>(StringComparer.Ordinal);
+                        map[property.Key] = values;
                     }
-                }
 
-                result[key] = values
-                    .Where(v => v != null)
-                    .OrderBy(v => v)
-                    .Take(200)
-                    .ToList();
+                    values.Add(property.Value ?? "null");
+                }
             }
 
-            return result;
+            return map
+                .OrderBy(kvp => kvp.Key)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value.OrderBy(v => v).ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        private string BuildFilterPropertyExpression(string propertyName)
+        {
+            if (IsSimpleIdentifier(propertyName))
+            {
+                return propertyName;
+            }
+
+            return $"@{BuildBracketAccessor(propertyName)}";
+        }
+
+        private string BuildObjectMemberAccess(string propertyName)
+        {
+            if (IsSimpleIdentifier(propertyName))
+            {
+                return $".{propertyName}";
+            }
+
+            return BuildBracketAccessor(propertyName);
+        }
+
+        private static string BuildBracketAccessor(string propertyName)
+        {
+            var escaped = propertyName
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"");
+            return $"[\"{escaped}\"]";
+        }
+
+        private static bool IsSimpleIdentifier(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            if (!(char.IsLetter(value[0]) || value[0] == '_'))
+            {
+                return false;
+            }
+
+            for (int i = 1; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (!(char.IsLetterOrDigit(c) || c == '_'))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string BuildJmesLiteral(string value)
+        {
+            if (value == null || value.Equals("null", StringComparison.OrdinalIgnoreCase))
+            {
+                return "null";
+            }
+
+            if (bool.TryParse(value, out var boolValue))
+            {
+                return boolValue ? "true" : "false";
+            }
+
+            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+            {
+                return value;
+            }
+
+            if (double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out var currentCultureNumber))
+            {
+                return currentCultureNumber.ToString(CultureInfo.InvariantCulture);
+            }
+
+            var escaped = value
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'");
+
+            return $"'{escaped}'";
         }
 
         private string DetectDateFormat(string dateString)

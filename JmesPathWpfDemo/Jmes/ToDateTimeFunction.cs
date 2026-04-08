@@ -69,6 +69,19 @@ namespace JmesPathWpfDemo.Jmes
 				var sourceTimeZone = ConvertTimeZone(fromTimezone, TimeZoneInfo.Utc);
 				var targetTimeZone = ConvertTimeZone(toTimezone, TimeZoneInfo.Local);
 
+				// Set the Kind based on source timezone
+				if (parsedDateTime.Kind == DateTimeKind.Unspecified)
+				{
+					if (sourceTimeZone.Equals(TimeZoneInfo.Utc))
+					{
+						parsedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Utc);
+					}
+					else if (sourceTimeZone.Equals(TimeZoneInfo.Local))
+					{
+						parsedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Local);
+					}
+				}
+
 				DateTime convertedDateTime;
 
 				if (parsedDateTime.Kind != DateTimeKind.Unspecified)
@@ -89,8 +102,11 @@ namespace JmesPathWpfDemo.Jmes
 					convertedDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, targetTimeZone);
 				}
 
-				// Return simple format without timezone offset
-				return new JValue(convertedDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
+               // Return DateTimeOffset with offset (default: yyyy-MM-dd HH:mm:sszzz)
+               // Always output as ISO 8601 DateTimeOffset string (standard format)
+			   var offset = targetTimeZone.GetUtcOffset(convertedDateTime);
+			   var dto = new DateTimeOffset(convertedDateTime, offset);
+			   return new JValue(dto.ToString("yyyy-MM-ddTHH:mm:ss.fffzzz", CultureInfo.InvariantCulture));
 			}
 			catch (Exception)
 			{

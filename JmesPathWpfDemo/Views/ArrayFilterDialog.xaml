@@ -12,6 +12,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -62,7 +63,7 @@
                 <TextBlock Text="Value Type" Margin="0,0,0,4"/>
                 <ComboBox x:Name="ValueTypeComboBox"
                           SelectionChanged="InputChanged"/>
-            </StackPanel>
+        </StackPanel>
         </Grid>
 
         <TextBlock Grid.Row="3" Text="Preview" FontWeight="Bold" Margin="0,0,0,6"/>

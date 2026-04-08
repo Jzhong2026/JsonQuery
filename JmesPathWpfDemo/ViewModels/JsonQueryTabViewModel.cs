@@ -715,6 +715,24 @@ namespace JmesPathWpfDemo.ViewModels
                     StringComparer.OrdinalIgnoreCase);
         }
 
+        private List<string> GetFilterableKeys(JsonTreeNode arrayNode)
+        {
+            return BuildFilterPropertyValues(arrayNode).Keys.ToList();
+        }
+
+        private Dictionary<string, List<string>> GetFilterableValues(JsonTreeNode arrayNode, List<string> keys)
+        {
+            var all = BuildFilterPropertyValues(arrayNode);
+            if (keys == null || keys.Count == 0)
+            {
+                return all;
+            }
+
+            return all
+                .Where(kvp => keys.Contains(kvp.Key))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
+        }
+
         private string BuildFilterPropertyExpression(string propertyName)
         {
             if (IsSimpleIdentifier(propertyName))

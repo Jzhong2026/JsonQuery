@@ -17,6 +17,18 @@ namespace JmesPathWpfDemo.Views
         public string SelectedValueType => ValueTypeComboBox.SelectedItem as string;
         public string SelectedValue => ValueComboBox.Text;
 
+        // Backward-compatible aliases used by other ViewModels after merge
+        public string SelectedFilterProperty => SelectedProperty;
+        public string SelectedFilterValue => SelectedValue;
+        public string SelectedReturnProperty => string.Empty;
+
+        public ArrayFilterDialog(Dictionary<string, List<string>> propertyValues)
+            : this(
+                propertyValues?.Keys.OrderBy(k => k).ToList() ?? new List<string>(),
+                propertyValues)
+        {
+        }
+
         public ArrayFilterDialog(List<string> filterableProperties, Dictionary<string, List<string>> propertyValues = null)
         {
             InitializeComponent();

@@ -19,7 +19,7 @@ namespace JmesPathWpfDemo.Services
 				using var doc = JsonDocument.Parse(jsonText);
 				var root = doc.RootElement;
 
-				ProcessElement(root, nodes, "");
+                ProcessElement(root, nodes, "", 0);
 			}
 			catch
 			{
@@ -29,7 +29,7 @@ namespace JmesPathWpfDemo.Services
 			return nodes;
 		}
 
-		private void ProcessElement(JsonElement element, ObservableCollection<JsonTreeNode> parentCollection, string currentPath)
+       private void ProcessElement(JsonElement element, ObservableCollection<JsonTreeNode> parentCollection, string currentPath, int depth)
 		{
 			switch (element.ValueKind)
 			{
@@ -40,12 +40,13 @@ namespace JmesPathWpfDemo.Services
 						{
 							Key = property.Name,
 							Path = string.IsNullOrEmpty(currentPath) ? property.Name : $"{currentPath}.{property.Name}",
-							Type = GetTypeString(property.Value.ValueKind)
+                          Type = GetTypeString(property.Value.ValueKind),
+							IsExpanded = depth == 0
 						};
 
 						if (property.Value.ValueKind == JsonValueKind.Object || property.Value.ValueKind == JsonValueKind.Array)
 						{
-							ProcessElement(property.Value, node.Children, node.Path);
+                           ProcessElement(property.Value, node.Children, node.Path, depth + 1);
 						}
 						else
 						{
@@ -64,12 +65,13 @@ namespace JmesPathWpfDemo.Services
 						{
 							Key = $"[{index}]",
 							Path = $"{currentPath}[{index}]",
-							Type = GetTypeString(item.ValueKind)
+                            Type = GetTypeString(item.ValueKind),
+							IsExpanded = depth == 0
 						};
 
 						if (item.ValueKind == JsonValueKind.Object || item.ValueKind == JsonValueKind.Array)
 						{
-							ProcessElement(item, node.Children, node.Path);
+                         ProcessElement(item, node.Children, node.Path, depth + 1);
 						}
 						else
 						{
@@ -86,7 +88,8 @@ namespace JmesPathWpfDemo.Services
 					{
 						Value = GetValueString(element),
 						Path = currentPath,
-						Type = GetTypeString(element.ValueKind)
+                     Type = GetTypeString(element.ValueKind),
+						IsExpanded = depth == 0
 					};
 					parentCollection.Add(valueNode);
 					break;

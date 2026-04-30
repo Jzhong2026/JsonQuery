@@ -10,10 +10,16 @@ namespace JmesPathWpfDemo.Models
         private bool _isExpanded;
         private string _sortKey;
         private bool _sortAscending = true;
+        private string _filterExpression;
 
         public string Name { get; set; }
         public string Value { get; set; }
         public string Path { get; set; }
+
+        /// <summary>
+        /// True if this node is a virtual array grouping node created by XmlTreeBuilder.
+        /// </summary>
+        public bool IsArrayNode { get; set; }
 
         public bool HasValue => !string.IsNullOrEmpty(Value);
 
@@ -32,6 +38,7 @@ namespace JmesPathWpfDemo.Models
                     _sortKey = value;
                     OnPropertyChanged(nameof(SortKey));
                     OnPropertyChanged(nameof(HasSortApplied));
+                    OnPropertyChanged(nameof(ValueText));
                 }
             }
         }
@@ -46,6 +53,7 @@ namespace JmesPathWpfDemo.Models
                     _sortAscending = value;
                     OnPropertyChanged(nameof(SortAscending));
                     OnPropertyChanged(nameof(HasSortApplied));
+                    OnPropertyChanged(nameof(ValueText));
                 }
             }
         }
@@ -78,17 +86,53 @@ namespace JmesPathWpfDemo.Models
             }
         }
 
+        public string FilterExpression
+        {
+            get => _filterExpression;
+            set
+            {
+                if (_filterExpression != value)
+                {
+                    _filterExpression = value;
+                    OnPropertyChanged(nameof(FilterExpression));
+                    OnPropertyChanged(nameof(HasFilterApplied));
+                    OnPropertyChanged(nameof(ValueText));
+                }
+            }
+        }
+
+        public bool HasFilterApplied => !string.IsNullOrEmpty(FilterExpression);
+
         public bool HasChildren => Children != null && Children.Count > 0;
         public bool HasAttributes => Attributes != null && Attributes.Count > 0;
 
-        // Determines if this node is an array (i.e., has siblings with the same name)
-        public bool IsArray
+        /// <summary>
+        /// True if this node is a virtual array grouping node.
+        /// </summary>
+        public bool IsArray => IsArrayNode;
+
+        /// <summary>
+        /// Display text for the value column, showing type/count and sort/filter indicators.
+        /// </summary>
+        public string ValueText
         {
             get
             {
-                if (Parent == null) return false;
-                var siblings = Parent.Children?.Where(c => c.Name == this.Name).ToList();
-                return siblings != null && siblings.Count > 1;
+                if (IsArrayNode)
+                {
+                    var text = $"Array ({Children.Count} items)";
+                    if (HasSortApplied)
+                    {
+                        var direction = SortAscending ? "↑" : "↓";
+                        text += $" [Sorted by {SortKey} {direction}]";
+                    }
+                    if (HasFilterApplied)
+                    {
+                        text += " [Filtered]";
+                    }
+                    return text;
+                }
+                return Value;
             }
         }
 

@@ -1,6 +1,8 @@
 using JmesPathWpfDemo.Models;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Xml;
 
 namespace JmesPathWpfDemo.Services
@@ -35,31 +37,8 @@ namespace JmesPathWpfDemo.Services
 
         private XmlTreeNode ProcessElement(XmlNode element, string currentPath)
         {
-            string nodePathPart = element.Name;
-            if (element.ParentNode != null)
-            {
-                int sameNameCount = 0;
-                int myIndex = 0;
-                foreach (XmlNode sibling in element.ParentNode.ChildNodes)
-                {
-                    if (sibling.NodeType == XmlNodeType.Element && sibling.Name == element.Name)
-                    {
-                        sameNameCount++;
-                        if (sibling == element)
-                        {
-                            myIndex = sameNameCount;
-                        }
-                    }
-                }
+            var nodePath = string.IsNullOrEmpty(currentPath) ? $"/{element.Name}" : $"{currentPath}/{element.Name}";
 
-                if (sameNameCount > 1)
-                {
-                    nodePathPart = $"{element.Name}[{myIndex}]";
-                }
-            }
-
-            var nodePath = string.IsNullOrEmpty(currentPath) ? $"/{nodePathPart}" : $"{currentPath}/{nodePathPart}";
-            
             var node = new XmlTreeNode
             {
                 Name = element.Name,
@@ -82,11 +61,54 @@ namespace JmesPathWpfDemo.Services
                 }
             }
 
+            // Group child elements by name to detect arrays
+            var childElements = new List<XmlNode>();
             foreach (XmlNode child in element.ChildNodes)
             {
                 if (child.NodeType == XmlNodeType.Element)
                 {
-                    var childNode = ProcessElement(child, nodePath);
+                    childElements.Add(child);
+                }
+            }
+
+            var grouped = childElements.GroupBy(c => c.Name).ToList();
+
+            foreach (var group in grouped)
+            {
+                var items = group.ToList();
+                if (items.Count > 1)
+                {
+                    // Create a virtual array grouping node
+                    var arrayPath = $"{nodePath}/{group.Key}";
+                    var arrayNode = new XmlTreeNode
+                    {
+                        Name = group.Key,
+                        Path = arrayPath,
+                        IsArrayNode = true,
+                        IsExpanded = true,
+                        Parent = node
+                    };
+
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        var itemPath = $"{arrayPath}[{i + 1}]";
+                        var childNode = ProcessElement(items[i], "");
+                        childNode.Name = $"[{i + 1}]";
+                        childNode.Path = itemPath;
+                        childNode.Parent = arrayNode;
+                        // Reassign attribute paths
+                        foreach (var attr in childNode.Attributes)
+                        {
+                            attr.Path = $"{itemPath}/@{attr.Name.TrimStart('@')}";
+                        }
+                        arrayNode.Children.Add(childNode);
+                    }
+
+                    node.Children.Add(arrayNode);
+                }
+                else
+                {
+                    var childNode = ProcessElement(items[0], nodePath);
                     childNode.Parent = node;
                     node.Children.Add(childNode);
                 }

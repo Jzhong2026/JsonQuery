@@ -3,6 +3,7 @@ using JmesPathWpfDemo.Models;
 using JmesPathWpfDemo.Services;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
@@ -20,6 +21,7 @@ namespace JmesPathWpfDemo.ViewModels
         private string _result;
         private ObservableCollection<XmlTreeNode> _xmlTreeNodes;
         private readonly XmlTreeBuilder _treeBuilder = new XmlTreeBuilder();
+        private readonly Dictionary<XmlTreeNode, List<XmlTreeNode>> _arrayFilterSnapshots = new();
 
         public XmlWorkspaceViewModel()
         {
@@ -44,7 +46,6 @@ namespace JmesPathWpfDemo.ViewModels
                 if (File.Exists(samplePath))
                 {
                     var jsonStr = File.ReadAllText(samplePath);
-                    // Add a root node because json usually is an object and DeserializeXmlNode requires one root
                     var doc = JsonConvert.DeserializeXmlNode(jsonStr, "Root");
                     using (var stringWriter = new StringWriter())
                     using (var xmlTextWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings { Indent = true }))
@@ -132,58 +133,58 @@ namespace JmesPathWpfDemo.ViewModels
         public void OnNodeSelected(XmlTreeNode node)
         {
             if (node == null) return;
-            Query = GetSortedPath(node);
+            Query = BuildXPath(node);
+        }
+
+        /// <summary>
+        /// Resolves the target array node. If the user right-clicked an item inside an array,
+        /// navigate up to the virtual array grouping node.
+        /// </summary>
+        private XmlTreeNode ResolveArrayNode(XmlTreeNode node)
+        {
+            if (node == null) return null;
+            if (node.IsArrayNode) return node;
+            if (node.Parent != null && node.Parent.IsArrayNode) return node.Parent;
+            return node;
         }
 
         public void GenerateArrayFilterQuery(XmlTreeNode node)
         {
             if (node == null) return;
 
-            var targetNode = node;
+            var arrayNode = ResolveArrayNode(node);
+            if (arrayNode == null || !arrayNode.IsArrayNode) return;
 
-            // If it's a leaf node/has no children/attributes, we likely want to filter the parent collection
-            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
-            {
-                targetNode = targetNode.Parent;
-            }
-
-            var targetPath = targetNode.Parent != null ? $"{targetNode.Parent.Path}/{targetNode.Name}" : $"/{targetNode.Name}";
-
-            var map = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            var map = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
-                // Select items in the same level under the specified parent
-                var siblings = targetNode.Parent != null
-                    ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
-                    : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
-
-                foreach (var n in siblings)
+                foreach (var item in arrayNode.Children)
                 {
-                    if (n.Attributes != null)
+                    if (item.Attributes != null)
                     {
-                        foreach (var attr in n.Attributes)
+                        foreach (var attr in item.Attributes)
                         {
-                            var key = attr.Name; // Already starts with '@' in XmlTreeBuilder
+                            var key = attr.Name;
                             if (!key.StartsWith("@")) key = "@" + key;
 
                             if (!map.TryGetValue(key, out var values))
                             {
-                                values = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                                 map[key] = values;
                             }
                             values.Add(attr.Value ?? string.Empty);
                         }
                     }
 
-                    foreach (var child in n.Children)
+                    foreach (var child in item.Children)
                     {
-                        if (child.Children.Count == 0)
+                        if (!child.IsArrayNode && child.Children.Count == 0)
                         {
                             var key = child.Name;
                             if (!map.TryGetValue(key, out var values))
                             {
-                                values = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                                 map[key] = values;
                             }
                             values.Add(child.Value ?? string.Empty);
@@ -196,22 +197,26 @@ namespace JmesPathWpfDemo.ViewModels
 
                 if (propertyValues.Count == 0)
                 {
-                    System.Windows.MessageBox.Show("No simple properties found to filter in this node or its siblings.", "Array Filter",
-                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    MessageBox.Show("No simple properties found to filter in array items.", "Array Filter",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
                 var dialog = new Views.ArrayFilterDialog(propertyValues);
-                dialog.Owner = System.Windows.Application.Current.MainWindow;
+                dialog.Owner = Application.Current.MainWindow;
 
                 if (dialog.ShowDialog() == true)
                 {
                     var filterProp = dialog.SelectedFilterProperty;
                     var filterValue = dialog.SelectedFilterValue;
                     var returnProp = dialog.SelectedReturnProperty;
+                    var filterExpression = $"{filterProp}='{filterValue}'";
 
-                    var queryPath = GetSortedPath(targetNode, omitLastIndex: true);
-                    var query = $"{queryPath}[{filterProp}='{filterValue}']";
+                    ApplyArrayFilter(arrayNode, filterProp, filterValue);
+                    arrayNode.FilterExpression = filterExpression;
+
+                    var queryPath = BuildXPath(arrayNode);
+                    var query = $"{queryPath}[{filterExpression}]";
 
                     if (!string.IsNullOrWhiteSpace(returnProp) && returnProp != "(Whole item)")
                     {
@@ -223,63 +228,75 @@ namespace JmesPathWpfDemo.ViewModels
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Error generating filter query: {ex.Message}");
+                MessageBox.Show($"Error generating filter query: {ex.Message}");
             }
+        }
+
+        public void ClearArrayFilter(XmlTreeNode node)
+        {
+            if (node == null) return;
+
+            var arrayNode = ResolveArrayNode(node);
+            if (arrayNode == null || !arrayNode.IsArrayNode) return;
+
+            if (_arrayFilterSnapshots.TryGetValue(arrayNode, out var originalChildren))
+            {
+                arrayNode.Children.Clear();
+                for (int i = 0; i < originalChildren.Count; i++)
+                {
+                    var child = originalChildren[i];
+                    child.Name = $"[{i + 1}]";
+                    child.Path = $"{arrayNode.Path}[{i + 1}]";
+                    arrayNode.Children.Add(child);
+                }
+                _arrayFilterSnapshots.Remove(arrayNode);
+            }
+
+            arrayNode.FilterExpression = null;
+            Query = BuildXPath(arrayNode);
         }
 
         public void GenerateJoinQuery(XmlTreeNode node)
         {
             if (node == null) return;
 
-            var properties = new System.Collections.Generic.HashSet<string>();
-            var targetNode = node;
-            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
-            {
-                targetNode = targetNode.Parent;
-            }
+            var arrayNode = ResolveArrayNode(node);
+            if (arrayNode == null || !arrayNode.IsArrayNode) return;
 
-            try
-            {
-                var siblings = targetNode.Parent != null
-                    ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
-                    : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
+            var properties = new HashSet<string>();
 
-                foreach (var n in siblings)
+            foreach (var item in arrayNode.Children)
+            {
+                if (item.Attributes != null)
                 {
-                    if (n.Attributes != null)
+                    foreach (var attr in item.Attributes)
                     {
-                        foreach (var attr in n.Attributes)
-                        {
-                            var key = attr.Name;
-                            if (!key.StartsWith("@")) key = "@" + key;
-                            properties.Add(key);
-                        }
+                        var key = attr.Name;
+                        if (!key.StartsWith("@")) key = "@" + key;
+                        properties.Add(key);
                     }
+                }
 
-                    foreach (var child in n.Children)
+                foreach (var child in item.Children)
+                {
+                    if (!child.IsArrayNode && child.Children.Count == 0)
                     {
-                        if (child.Children.Count == 0)
-                        {
-                            properties.Add(child.Name);
-                        }
+                        properties.Add(child.Name);
                     }
                 }
             }
-            catch { }
 
             var propsList = properties.OrderBy(x => x).ToList();
             if (propsList.Count == 0) return;
 
-            var dialog = new Views.JoinQueryDialog(propsList, new System.Collections.Generic.List<Models.SavedQuery>());
-            dialog.Owner = System.Windows.Application.Current.MainWindow;
+            var dialog = new Views.JoinQueryDialog(propsList, new List<Models.SavedQuery>());
+            dialog.Owner = Application.Current.MainWindow;
 
             if (dialog.ShowDialog() == true)
             {
                 var prop = dialog.SelectedProperty;
                 var sep = dialog.SelectedSeparator ?? ", ";
-
-                var queryPath = GetSortedPath(targetNode, omitLastIndex: true);
-
+                var queryPath = BuildXPath(arrayNode);
                 Query = $"join({queryPath}/{prop}, '{sep}')";
             }
         }
@@ -288,122 +305,82 @@ namespace JmesPathWpfDemo.ViewModels
         {
             if (node == null) return;
 
-            var targetNode = node;
-            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
+            var arrayNode = ResolveArrayNode(node);
+            if (arrayNode == null || !arrayNode.IsArrayNode || arrayNode.Children.Count == 0) return;
+
+            var firstItem = arrayNode.Children.FirstOrDefault();
+            if (firstItem == null) return;
+
+            var sortKeys = new List<string>();
+            foreach (var attr in firstItem.Attributes)
             {
-                targetNode = targetNode.Parent;
+                var key = attr.Name;
+                if (!key.StartsWith("@")) key = "@" + key;
+                sortKeys.Add(key);
             }
-
-            var siblings = targetNode.Parent != null
-                ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
-                : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
-
-            // For XML, any repeating element is naturally an array
-            if (siblings.Count == 0 && targetNode.Parent == null) return;
-
-            var sortKeys = new System.Collections.Generic.List<string>();
-            var firstItem = siblings.FirstOrDefault();
-            if (firstItem != null)
+            foreach (var child in firstItem.Children)
             {
-                foreach (var attr in firstItem.Attributes)
-                {
-                    var key = attr.Name;
-                    if (!key.StartsWith("@")) key = "@" + key;
-                    sortKeys.Add(key);
-                }
-                foreach (var child in firstItem.Children)
-                {
-                    if (child.Children.Count == 0)
-                        sortKeys.Add(child.Name);
-                }
+                if (!child.IsArrayNode && child.Children.Count == 0)
+                    sortKeys.Add(child.Name);
             }
 
             if (sortKeys.Count == 0)
             {
-                System.Windows.MessageBox.Show("No sortable properties found in array items.", "Array Sort",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                MessageBox.Show("No sortable properties found in array items.", "Array Sort",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var dialog = new Views.ArraySortDialog(sortKeys, targetNode.SortKey, targetNode.SortAscending);
-            dialog.Owner = System.Windows.Application.Current.MainWindow;
+            var dialog = new Views.ArraySortDialog(sortKeys, arrayNode.SortKey, arrayNode.SortAscending);
+            dialog.Owner = Application.Current.MainWindow;
 
             if (dialog.ShowDialog() == true)
             {
-                foreach (var sibling in siblings)
+                arrayNode.SortKey = dialog.SelectedSortKey;
+                arrayNode.SortAscending = dialog.SortAscending;
+
+                var sorted = dialog.SortAscending
+                    ? arrayNode.Children.OrderBy(s => GetNodeSortValue(s, dialog.SelectedSortKey), new NumericStringComparer()).ToList()
+                    : arrayNode.Children.OrderByDescending(s => GetNodeSortValue(s, dialog.SelectedSortKey), new NumericStringComparer()).ToList();
+
+                arrayNode.Children.Clear();
+                for (int i = 0; i < sorted.Count; i++)
                 {
-                    sibling.SortKey = dialog.SelectedSortKey;
-                    sibling.SortAscending = dialog.SortAscending;
+                    sorted[i].Name = $"[{i + 1}]";
+                    sorted[i].Path = $"{arrayNode.Path}[{i + 1}]";
+                    arrayNode.Children.Add(sorted[i]);
                 }
 
-                if (targetNode.Parent != null)
-                {
-                    var parent = targetNode.Parent;
-                    var sortedChildren = dialog.SortAscending 
-                        ? siblings.OrderBy(s => GetNodeSortValue(s, dialog.SelectedSortKey), new NumericStringComparer()).ToList()
-                        : siblings.OrderByDescending(s => GetNodeSortValue(s, dialog.SelectedSortKey), new NumericStringComparer()).ToList();
-
-                    int firstIdx = parent.Children.IndexOf(siblings.First());
-                    foreach(var sibling in siblings) {
-                        parent.Children.Remove(sibling);
-                    }
-                    for(int i = 0; i < sortedChildren.Count; i++) {
-                        parent.Children.Insert(firstIdx + i, sortedChildren[i]);
-                    }
-                }
-
-                var wasSelected = node.IsSelected;
-                if (wasSelected)
-                {
-                    node.IsSelected = false;
-                    node.IsSelected = true;
-                }
-                else
-                {
-                    node.IsSelected = true;
-                }
-
-                Query = GetSortedPath(targetNode, omitLastIndex: true);
+                Query = BuildXPath(arrayNode);
             }
         }
 
         public void ClearArraySort(XmlTreeNode node)
         {
             if (node == null) return;
-            var targetNode = node;
-            if (targetNode.Children.Count == 0 && targetNode.Attributes.Count == 0 && targetNode.Parent != null)
-            {
-                targetNode = targetNode.Parent;
-            }
 
-            var siblings = targetNode.Parent != null
-                ? targetNode.Parent.Children.Where(c => c.Name == targetNode.Name).ToList()
-                : new System.Collections.Generic.List<XmlTreeNode> { targetNode };
+            var arrayNode = ResolveArrayNode(node);
+            if (arrayNode == null || !arrayNode.IsArrayNode) return;
 
-            foreach (var sibling in siblings)
-            {
-                sibling.SortKey = null;
-                sibling.SortAscending = true;
-            }
+            arrayNode.SortKey = null;
+            arrayNode.SortAscending = true;
 
-            Query = GetSortedPath(targetNode, omitLastIndex: true);
+            Query = BuildXPath(arrayNode);
             RefreshXmlTree();
         }
 
-        // Show dialog to generate a todatetime query for a non-array node
         public void ShowToDateTimeDialog(XmlTreeNode node)
         {
             if (node == null || node.IsArray) return;
 
-            // Prompt user for format, from-tz, to-tz (simple input dialog for now)
             var inputDialog = new Views.ToDateTimeDialog();
-            inputDialog.Owner = System.Windows.Application.Current.MainWindow;
+            inputDialog.Owner = Application.Current.MainWindow;
             if (inputDialog.ShowDialog() == true)
             {
                 var format = inputDialog.Format;
                 var fromTz = inputDialog.FromTimeZone;
                 var toTz = inputDialog.ToTimeZone;
-                var path = GetSortedPath(node);
+                var path = BuildXPath(node);
                 var query = $"todatetime({path}"
                     + (string.IsNullOrWhiteSpace(format) ? "" : $", '{format}'")
                     + (string.IsNullOrWhiteSpace(fromTz) ? "" : $", '{fromTz}'")
@@ -413,7 +390,7 @@ namespace JmesPathWpfDemo.ViewModels
             }
         }
 
-        private class NumericStringComparer : System.Collections.Generic.IComparer<string>
+        private class NumericStringComparer : IComparer<string>
         {
             public int Compare(string x, string y)
             {
@@ -440,13 +417,16 @@ namespace JmesPathWpfDemo.ViewModels
             }
         }
 
-        private string GetSortedPath(XmlTreeNode node, bool omitLastIndex = false)
+        /// <summary>
+        /// Build an XPath expression for the given node, walking up the tree.
+        /// Array grouping nodes produce the element name; their children produce [index].
+        /// </summary>
+        private string BuildXPath(XmlTreeNode node)
         {
             if (node == null) return "";
 
-            var steps = new System.Collections.Generic.List<XmlTreeNode>();
+            var steps = new List<XmlTreeNode>();
             var current = node;
-
             while (current != null)
             {
                 steps.Insert(0, current);
@@ -454,49 +434,33 @@ namespace JmesPathWpfDemo.ViewModels
             }
 
             string expr = "";
-
             for (int i = 0; i < steps.Count; i++)
             {
                 var step = steps[i];
-                string stepName = step.Name;
-                bool isArrayElement = false;
-                int index = 1;
 
-                if (step.Parent != null)
+                if (step.IsArrayNode)
                 {
-                    var siblings = step.Parent.Children.Where(c => c.Name == step.Name).ToList();
-                    if (siblings.Count > 1)
+                    // Virtual array node → just append the element name
+                    expr = string.IsNullOrEmpty(expr) ? $"/{step.Name}" : $"{expr}/{step.Name}";
+
+                    if (step.HasSortApplied)
                     {
-                        isArrayElement = true;
-                        index = siblings.IndexOf(step) + 1;
+                        string order = step.SortAscending ? "asc" : "desc";
+                        expr = $"sortby({expr}, '{step.SortKey}', '{order}')";
                     }
                 }
-
-                bool omitThisIndex = (omitLastIndex && i == steps.Count - 1);
-
-                if (step.HasSortApplied && isArrayElement)
+                else if (step.Parent != null && step.Parent.IsArrayNode)
                 {
-                    string arrayExpr = string.IsNullOrEmpty(expr) ? $"/{stepName}" : $"{expr}/{stepName}";
-                    string order = step.SortAscending ? "asc" : "desc";
-                    expr = $"sortby({arrayExpr}, '{step.SortKey}', '{order}')";
-
-                    if (!omitThisIndex) {
-                        expr = $"{expr}[{index}]"; 
-                    }
+                    // Child of array node → append [index]
+                    var index = step.Parent.Children.IndexOf(step) + 1;
+                    expr = $"{expr}[{index}]";
                 }
                 else
                 {
-                    if (string.IsNullOrEmpty(expr)) {
-                        expr = "/" + stepName;
-                    } else if (stepName.StartsWith("@")) {
-                        expr = expr + "/" + stepName;
-                    } else {
-                        expr = expr + "/" + stepName;
-                    }
-
-                    if (isArrayElement && !omitThisIndex) {
-                        expr = expr + $"[{index}]";
-                    }
+                    if (string.IsNullOrEmpty(expr))
+                        expr = "/" + step.Name;
+                    else
+                        expr = expr + "/" + step.Name;
                 }
             }
 
@@ -510,15 +474,58 @@ namespace JmesPathWpfDemo.ViewModels
 
         private void RefreshXmlTree()
         {
+            _arrayFilterSnapshots.Clear();
             var nodes = _treeBuilder.BuildTree(XmlInput);
             if (nodes != null)
             {
-                foreach (var node in nodes)
-                {
-                    node.IsExpanded = true;
-                }
+                ExpandAll(nodes);
             }
             XmlTreeNodes = nodes;
+        }
+
+        private void ExpandAll(IEnumerable<XmlTreeNode> nodes)
+        {
+            foreach (var node in nodes)
+            {
+                node.IsExpanded = true;
+                if (node.Children != null && node.Children.Count > 0)
+                    ExpandAll(node.Children);
+            }
+        }
+
+        private void ApplyArrayFilter(XmlTreeNode arrayNode, string filterProp, string filterValue)
+        {
+            if (arrayNode == null || !arrayNode.IsArrayNode) return;
+
+            if (!_arrayFilterSnapshots.ContainsKey(arrayNode))
+            {
+                _arrayFilterSnapshots[arrayNode] = arrayNode.Children.ToList();
+            }
+
+            var source = _arrayFilterSnapshots[arrayNode];
+            var filtered = source.Where(item => IsItemMatch(item, filterProp, filterValue)).ToList();
+
+            arrayNode.Children.Clear();
+            for (int i = 0; i < filtered.Count; i++)
+            {
+                filtered[i].Name = $"[{i + 1}]";
+                filtered[i].Path = $"{arrayNode.Path}[{i + 1}]";
+                arrayNode.Children.Add(filtered[i]);
+            }
+        }
+
+        private bool IsItemMatch(XmlTreeNode item, string filterProp, string filterValue)
+        {
+            if (filterProp.StartsWith("@"))
+            {
+                var attr = item.Attributes?.FirstOrDefault(a => a.Name == filterProp || a.Name == filterProp.TrimStart('@'));
+                return attr != null && string.Equals(attr.Value, filterValue, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                var child = item.Children?.FirstOrDefault(c => c.Name == filterProp);
+                return child != null && string.Equals(child.Value, filterValue, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         public void Execute()
@@ -550,7 +557,6 @@ namespace JmesPathWpfDemo.ViewModels
                     System.Text.StringBuilder sb = new System.Text.StringBuilder();
                     while (iterator.MoveNext())
                     {
-                        // Use InnerXml to omit wrapper tags, fallback to Value for attributes/text 
                         string content = string.IsNullOrEmpty(iterator.Current.InnerXml) ? iterator.Current.Value : iterator.Current.InnerXml;
                         sb.Append(content);
                         if (iterator.CurrentPosition != iterator.Count)
@@ -574,7 +580,6 @@ namespace JmesPathWpfDemo.ViewModels
                 }
                 else
                 {
-                    // It's a scalar value (e.g. string, number, boolean) from functions like count(), string()
                     Result = result != null ? result.ToString() : "null";
                 }
             }

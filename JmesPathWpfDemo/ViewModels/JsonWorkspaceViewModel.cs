@@ -505,7 +505,7 @@ namespace JmesPathWpfDemo.ViewModels
 
 			string detectedFormat = DetectDateFormat(node.Value);
 
-			var dialog = new TimezoneSelectionDialog("Central Standard Time", "Pacific Standard Time", detectedFormat);
+         var dialog = new TimezoneSelectionDialog(null, null, detectedFormat);
 			dialog.Owner = Application.Current.MainWindow;
 
 			if (dialog.ShowDialog() == true)

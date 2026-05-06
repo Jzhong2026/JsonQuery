@@ -381,11 +381,10 @@ namespace JmesPathWpfDemo.ViewModels
                 var fromTz = inputDialog.FromTimeZone;
                 var toTz = inputDialog.ToTimeZone;
                 var path = BuildXPath(node);
-                var query = $"todatetime({path}"
-                    + (string.IsNullOrWhiteSpace(format) ? "" : $", '{format}'")
-                    + (string.IsNullOrWhiteSpace(fromTz) ? "" : $", '{fromTz}'")
-                    + (string.IsNullOrWhiteSpace(toTz) ? "" : $", '{toTz}'")
-                    + ")";
+                var formatArg = string.IsNullOrWhiteSpace(format) ? "''" : $"'{format}'";
+                var fromTzArg = string.IsNullOrWhiteSpace(fromTz) ? "''" : $"'{fromTz}'";
+                var toTzArg = string.IsNullOrWhiteSpace(toTz) ? "''" : $"'{toTz}'";
+                var query = $"todatetime({path}, {formatArg}, {fromTzArg}, {toTzArg})";
                 Query = query;
             }
         }

@@ -1,4 +1,7 @@
 using Caliburn.Micro;
+using JmesPathWpfDemo.Models;
+using JmesPathWpfDemo.Services;
+using JmesPathWpfDemo.Views;
 
 namespace JmesPathWpfDemo.ViewModels
 {
@@ -46,6 +49,21 @@ namespace JmesPathWpfDemo.ViewModels
                     NotifyOfPropertyChange(() => IsJsonWorkspaceActive);
                     NotifyOfPropertyChange(() => IsXmlWorkspaceActive);
                 } 
+            }
+        }
+
+        public void ConfigureClientTimeZone()
+        {
+            var dialog = new ClientTimeZoneSettingsDialog(ClientTimeZoneSettingsService.Current);
+            dialog.Owner = System.Windows.Application.Current?.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                ClientTimeZoneSettingsService.Save(new ClientTimeZoneSettings
+                {
+                    TimeZoneId = dialog.SelectedTimeZoneId,
+                    RespectDaylightSavings = dialog.RespectDaylightSavings
+                });
             }
         }
     }

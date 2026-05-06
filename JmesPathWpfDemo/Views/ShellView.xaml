@@ -53,7 +53,16 @@
         
         <!-- Header / Workspace Switcher -->
         <Border Grid.Row="0" Background="#F8F9FA" BorderBrush="#DEE2E6" BorderThickness="0,0,0,1" Padding="10,10,10,0">
-            <StackPanel Orientation="Horizontal">
+               <DockPanel LastChildFill="False">
+                    <Button DockPanel.Dock="Right"
+                            Content="Client Timezone Settings"
+                            Width="180"
+                            Height="32"
+                            Margin="10,0,10,8"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            cal:Message.Attach="ConfigureClientTimeZone"/>
+
+                    <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Query Studio" 
                            FontWeight="Bold" 
                            FontSize="18" 
@@ -71,7 +80,8 @@
                              IsChecked="{Binding IsXmlWorkspaceActive}"
                              Style="{StaticResource WorkspaceToggleStyle}" 
                              GroupName="WorkspaceSel"/>
-            </StackPanel>
+                   </StackPanel>
+                </DockPanel>
         </Border>
         
         <!-- Active Workspace Content -->

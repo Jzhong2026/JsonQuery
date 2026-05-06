@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using JmesPathWpfDemo.Services; // Added service namespace
 
 namespace JmesPathWpfDemo.Services
 {
@@ -247,62 +248,18 @@ namespace JmesPathWpfDemo.Services
 
             if (string.IsNullOrWhiteSpace(dateStr)) return string.Empty;
 
-            string format = args.Length > 1 && args[1] != null ? args[1].ToString() : null;
-            string fromTz = args.Length > 2 && args[2] != null ? args[2].ToString() : "UTC";
+         string format = args.Length > 1 && args[1] != null ? args[1].ToString() : null;
+            string fromTz = args.Length > 2 && args[2] != null ? args[2].ToString() : null;
             string toTz = args.Length > 3 && args[3] != null ? args[3].ToString() : null;
 
             try
             {
-                var dt = TryParseDateTime(dateStr, format);
-                if (dt == DateTime.MinValue) return string.Empty;
-
-                var sourceTz = ConvertTimeZone(fromTz, TimeZoneInfo.Utc);
-                var targetTz = ConvertTimeZone(toTz, TimeZoneInfo.Local);
-
-                if (dt.Kind == DateTimeKind.Unspecified)
-                {
-                    if (sourceTz.Equals(TimeZoneInfo.Utc))
-                        dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-                    else if (sourceTz.Equals(TimeZoneInfo.Local))
-                        dt = DateTime.SpecifyKind(dt, DateTimeKind.Local);
-                }
-
-                // Convert to UTC first, then to target timezone
-                DateTime utcTime = dt.Kind == DateTimeKind.Utc ? dt : TimeZoneInfo.ConvertTimeToUtc(dt, sourceTz);
-                DateTime targetTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, targetTz);
-
-                // Get the correct offset for the target timezone at that date
-                TimeSpan offset = targetTz.GetUtcOffset(targetTime);
-                var dto = new DateTimeOffset(targetTime, offset);
-                return dto.ToString("o");
+             return DateTimeConversionService.ConvertForXPath(dateStr, format, fromTz, toTz);
             }
             catch
             {
                 return string.Empty;
             }
-        }
-
-        private TimeZoneInfo ConvertTimeZone(string id, TimeZoneInfo def)
-        {
-            if (string.IsNullOrEmpty(id)) return def;
-            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-            catch { return def; }
-        }
-
-        private DateTime TryParseDateTime(string str, string fmt)
-        {
-            DateTime dt = DateTime.MinValue;
-            if (!string.IsNullOrEmpty(fmt))
-            {
-                if (!DateTime.TryParseExact(str, fmt, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out dt))
-                    return dt;
-            }
-            else
-            {
-                if (!DateTime.TryParse(str, out dt))
-                    return dt;
-            }
-            return dt;
         }
     }
 

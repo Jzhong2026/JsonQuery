@@ -1,11 +1,7 @@
 ﻿using DevLab.JmesPath.Functions;
+using JmesPathWpfDemo.Services;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JmesPathWpfDemo.Jmes
 {
@@ -28,7 +24,7 @@ namespace JmesPathWpfDemo.Jmes
 			{
 				var resultArray = new JArray();
 				var format = args.Length > 1 ? ExtractStringValue(args[1]) : null;
-				var fromTimezone = args.Length > 2 ? ExtractStringValue(args[2]) : "UTC";
+               var fromTimezone = args.Length > 2 ? ExtractStringValue(args[2]) : null;
 				var toTimezone = args.Length > 3 ? ExtractStringValue(args[3]) : null;
 
 				foreach (var item in arrayInput)
@@ -44,7 +40,7 @@ namespace JmesPathWpfDemo.Jmes
 			// Handle single value input
 			var singleDateString = ExtractStringValue(args[0]);
 			var singleFormat = args.Length > 1 ? ExtractStringValue(args[1]) : null;
-			var singleFromTimezone = args.Length > 2 ? ExtractStringValue(args[2]) : "UTC";
+         var singleFromTimezone = args.Length > 2 ? ExtractStringValue(args[2]) : null;
 			var singleToTimezone = args.Length > 3 ? ExtractStringValue(args[3]) : null;
 
 			return ConvertSingleDateTime(singleDateString, singleFormat, singleFromTimezone, singleToTimezone);
@@ -52,63 +48,11 @@ namespace JmesPathWpfDemo.Jmes
 
 		private JToken ConvertSingleDateTime(string dateString, string format, string fromTimezone, string toTimezone)
 		{
-			if (string.IsNullOrWhiteSpace(dateString))
-			{
-				return JValue.CreateNull();
-			}
-
 			try
 			{
-				var parsedDateTime = TryParseDateTime(dateString, format);
-				if (parsedDateTime == DateTime.MinValue)
-				{
-					return JValue.CreateNull();
-				}
-
-				// Get source timezone (default UTC)
-				var sourceTimeZone = ConvertTimeZone(fromTimezone, TimeZoneInfo.Utc);
-				var targetTimeZone = ConvertTimeZone(toTimezone, TimeZoneInfo.Local);
-
-				// Set the Kind based on source timezone
-				if (parsedDateTime.Kind == DateTimeKind.Unspecified)
-				{
-					if (sourceTimeZone.Equals(TimeZoneInfo.Utc))
-					{
-						parsedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Utc);
-					}
-					else if (sourceTimeZone.Equals(TimeZoneInfo.Local))
-					{
-						parsedDateTime = DateTime.SpecifyKind(parsedDateTime, DateTimeKind.Local);
-					}
-				}
-
-				DateTime convertedDateTime;
-
-				if (parsedDateTime.Kind != DateTimeKind.Unspecified)
-				{
-					convertedDateTime = TimeZoneInfo.ConvertTimeFromUtc(parsedDateTime.ToUniversalTime(), targetTimeZone);
-				}
-				else if (sourceTimeZone.Equals(TimeZoneInfo.Utc))
-				{
-					convertedDateTime = TimeZoneInfo.ConvertTimeFromUtc(parsedDateTime.ToUniversalTime(), targetTimeZone);
-				}
-				else if (targetTimeZone.Equals(TimeZoneInfo.Utc))
-				{
-					convertedDateTime = TimeZoneInfo.ConvertTimeToUtc(parsedDateTime, sourceTimeZone);
-				}
-				else
-				{
-					var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(parsedDateTime, sourceTimeZone);
-					convertedDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, targetTimeZone);
-				}
-
-               // Return DateTimeOffset with offset (default: yyyy-MM-dd HH:mm:sszzz)
-               // Always output as ISO 8601 DateTimeOffset string (standard format)
-			   var offset = targetTimeZone.GetUtcOffset(convertedDateTime);
-			   var dto = new DateTimeOffset(convertedDateTime, offset);
-			   return new JValue(dto.ToString("yyyy-MM-ddTHH:mm:ss.fffzzz", CultureInfo.InvariantCulture));
+              return DateTimeConversionService.ConvertForJson(dateString, format, fromTimezone, toTimezone);
 			}
-			catch (Exception)
+           catch
 			{
 				return JValue.CreateNull();
 			}
@@ -128,44 +72,6 @@ namespace JmesPathWpfDemo.Jmes
 			}
 
 			return token.Type == JTokenType.String ? token.Value<string>() : token.ToString();
-		}
-
-		private TimeZoneInfo ConvertTimeZone(string timezoneId, TimeZoneInfo defaultTimeZone)
-		{
-			if (string.IsNullOrEmpty(timezoneId))
-			{
-				return defaultTimeZone;
-			}
-
-			try
-			{
-				return TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-			}
-			catch
-			{
-				return defaultTimeZone;
-			}
-		}
-
-		private DateTime TryParseDateTime(string dateTimestr, string format)
-		{
-			DateTime parsedDateTime = DateTime.MinValue;
-			if (!string.IsNullOrEmpty(format))
-			{
-				if (!DateTime.TryParseExact(dateTimestr, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
-				{
-					return parsedDateTime;
-				}
-			}
-			else
-			{
-				if (!DateTime.TryParse(dateTimestr, out parsedDateTime))
-				{
-					return parsedDateTime;
-				}
-			}
-
-			return parsedDateTime;
 		}
 	}
 }

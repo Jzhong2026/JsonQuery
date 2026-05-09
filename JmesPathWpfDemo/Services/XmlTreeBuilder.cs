@@ -96,11 +96,7 @@ namespace JmesPathWpfDemo.Services
                         childNode.Name = $"[{i + 1}]";
                         childNode.Path = itemPath;
                         childNode.Parent = arrayNode;
-                        // Reassign attribute paths
-                        foreach (var attr in childNode.Attributes)
-                        {
-                            attr.Path = $"{itemPath}/@{attr.Name.TrimStart('@')}";
-                        }
+                     RebuildNodePaths(childNode);
                         arrayNode.Children.Add(childNode);
                     }
 
@@ -115,6 +111,39 @@ namespace JmesPathWpfDemo.Services
             }
 
             return node;
+        }
+
+        private void RebuildNodePaths(XmlTreeNode node)
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            foreach (var attribute in node.Attributes)
+            {
+                attribute.Parent = node;
+                attribute.Path = $"{node.Path}/@{attribute.Name.TrimStart('@')}";
+            }
+
+            foreach (var child in node.Children)
+            {
+                child.Parent = node;
+                if (child.IsArrayNode)
+                {
+                    child.Path = $"{node.Path}/{child.Name}";
+                }
+                else if (node.IsArrayNode && child.Name.StartsWith("[") && child.Name.EndsWith("]"))
+                {
+                    child.Path = $"{node.Path}{child.Name}";
+                }
+                else
+                {
+                    child.Path = $"{node.Path}/{child.Name}";
+                }
+
+                RebuildNodePaths(child);
+            }
         }
     }
 }

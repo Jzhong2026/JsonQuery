@@ -133,7 +133,7 @@ namespace JmesPathWpfDemo.ViewModels
         public void OnNodeSelected(XmlTreeNode node)
         {
             if (node == null) return;
-            Query = BuildXPath(node);
+            Query = BuildXPathWithActiveFilters(node);
         }
 
         /// <summary>
@@ -215,8 +215,7 @@ namespace JmesPathWpfDemo.ViewModels
                     ApplyArrayFilter(arrayNode, filterProp, filterValue);
                     arrayNode.FilterExpression = filterExpression;
 
-                    var queryPath = BuildXPath(arrayNode);
-                    var query = $"{queryPath}[{filterExpression}]";
+                    var query = BuildXPathWithActiveFilters(arrayNode);
 
                     if (!string.IsNullOrWhiteSpace(returnProp) && returnProp != "(Whole item)")
                     {
@@ -247,13 +246,14 @@ namespace JmesPathWpfDemo.ViewModels
                     var child = originalChildren[i];
                     child.Name = $"[{i + 1}]";
                     child.Path = $"{arrayNode.Path}[{i + 1}]";
+                    RebuildDescendantPaths(child);
                     arrayNode.Children.Add(child);
                 }
                 _arrayFilterSnapshots.Remove(arrayNode);
             }
 
             arrayNode.FilterExpression = null;
-            Query = BuildXPath(arrayNode);
+            Query = BuildXPathWithActiveFilters(arrayNode);
         }
 
         public void GenerateJoinQuery(XmlTreeNode node)
@@ -296,7 +296,7 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 var prop = dialog.SelectedProperty;
                 var sep = dialog.SelectedSeparator ?? ", ";
-                var queryPath = BuildXPath(arrayNode);
+                var queryPath = BuildXPathWithActiveFilters(arrayNode);
                 Query = $"join({queryPath}/{prop}, '{sep}')";
             }
         }
@@ -348,10 +348,11 @@ namespace JmesPathWpfDemo.ViewModels
                 {
                     sorted[i].Name = $"[{i + 1}]";
                     sorted[i].Path = $"{arrayNode.Path}[{i + 1}]";
+                    RebuildDescendantPaths(sorted[i]);
                     arrayNode.Children.Add(sorted[i]);
                 }
 
-                Query = BuildXPath(arrayNode);
+                Query = BuildXPathWithActiveFilters(arrayNode);
             }
         }
 
@@ -365,7 +366,7 @@ namespace JmesPathWpfDemo.ViewModels
             arrayNode.SortKey = null;
             arrayNode.SortAscending = true;
 
-            Query = BuildXPath(arrayNode);
+            Query = BuildXPathWithActiveFilters(arrayNode);
             RefreshXmlTree();
         }
 
@@ -380,7 +381,7 @@ namespace JmesPathWpfDemo.ViewModels
                 var format = inputDialog.Format;
                 var fromTz = inputDialog.FromTimeZone;
                 var toTz = inputDialog.ToTimeZone;
-                var path = BuildXPath(node);
+                var path = BuildXPathWithActiveFilters(node);
                 var formatArg = string.IsNullOrWhiteSpace(format) ? "''" : $"'{format}'";
                 var fromTzArg = string.IsNullOrWhiteSpace(fromTz) ? "''" : $"'{fromTz}'";
                 var toTzArg = string.IsNullOrWhiteSpace(toTz) ? "''" : $"'{toTz}'";
@@ -442,6 +443,11 @@ namespace JmesPathWpfDemo.ViewModels
                     // Virtual array node → just append the element name
                     expr = string.IsNullOrEmpty(expr) ? $"/{step.Name}" : $"{expr}/{step.Name}";
 
+                    if (step.HasFilterApplied)
+                    {
+                        expr = $"{expr}[{step.FilterExpression}]";
+                    }
+
                     if (step.HasSortApplied)
                     {
                         string order = step.SortAscending ? "asc" : "desc";
@@ -464,6 +470,93 @@ namespace JmesPathWpfDemo.ViewModels
             }
 
             return expr;
+        }
+
+        private string BuildXPathWithActiveFilters(XmlTreeNode node)
+        {
+            return BuildXPath(node);
+        }
+
+        private string ApplyActiveArrayFilters(XmlTreeNode selectedNode, string query)
+        {
+            if (selectedNode == null || string.IsNullOrWhiteSpace(query))
+            {
+                return query;
+            }
+
+            var filteredArrays = FindArrayAncestorsWithFilter(selectedNode);
+            if (selectedNode.IsArrayNode && selectedNode.HasFilterApplied)
+            {
+                filteredArrays.Add(selectedNode);
+            }
+
+            if (filteredArrays.Count == 0)
+            {
+                return query;
+            }
+
+            foreach (var arrayNode in filteredArrays.OrderByDescending(a => a.Path.Length))
+            {
+                if (string.IsNullOrWhiteSpace(arrayNode.FilterExpression))
+                {
+                    continue;
+                }
+
+                query = ReplaceArrayPrefixWithFilter(query, arrayNode.Path, arrayNode.FilterExpression);
+            }
+
+            return query;
+        }
+
+        private List<XmlTreeNode> FindArrayAncestorsWithFilter(XmlTreeNode node)
+        {
+            var result = new List<XmlTreeNode>();
+            var current = node?.Parent;
+
+            while (current != null)
+            {
+                if (current.IsArrayNode && current.HasFilterApplied)
+                {
+                    result.Add(current);
+                }
+
+                current = current.Parent;
+            }
+
+            return result;
+        }
+
+        private string ReplaceArrayPrefixWithFilter(string query, string arrayPath, string filterExpression)
+        {
+            if (string.IsNullOrWhiteSpace(query) || string.IsNullOrWhiteSpace(arrayPath) || string.IsNullOrWhiteSpace(filterExpression))
+            {
+                return query;
+            }
+
+            var sortPrefix = $"sortby({arrayPath},";
+            if (query.Contains(sortPrefix, StringComparison.Ordinal))
+            {
+                return query.Replace(sortPrefix, $"sortby({arrayPath}[{filterExpression}],", StringComparison.Ordinal);
+            }
+
+            var targetPrefix = $"{arrayPath}[";
+            if (query.StartsWith(targetPrefix, StringComparison.Ordinal))
+            {
+                var closeIndex = query.IndexOf(']', targetPrefix.Length);
+                if (closeIndex > -1)
+                {
+                    var remainder = query.Substring(closeIndex + 1);
+                    return $"{arrayPath}[{filterExpression}]{remainder}";
+                }
+            }
+
+            if (query.StartsWith(arrayPath, StringComparison.Ordinal))
+            {
+                var remainder = query.Substring(arrayPath.Length);
+                return $"{arrayPath}[{filterExpression}]{remainder}";
+            }
+
+            return query;
         }
 
         public void RefreshTree()
@@ -509,7 +602,42 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 filtered[i].Name = $"[{i + 1}]";
                 filtered[i].Path = $"{arrayNode.Path}[{i + 1}]";
+                RebuildDescendantPaths(filtered[i]);
                 arrayNode.Children.Add(filtered[i]);
+            }
+        }
+
+        private void RebuildDescendantPaths(XmlTreeNode node)
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            foreach (var attribute in node.Attributes)
+            {
+                attribute.Parent = node;
+                attribute.Path = $"{node.Path}/@{attribute.Name.TrimStart('@')}";
+            }
+
+            foreach (var child in node.Children)
+            {
+                child.Parent = node;
+
+                if (child.IsArrayNode)
+                {
+                    child.Path = $"{node.Path}/{child.Name}";
+                }
+                else if (node.IsArrayNode && child.Name.StartsWith("[") && child.Name.EndsWith("]"))
+                {
+                    child.Path = $"{node.Path}{child.Name}";
+                }
+                else
+                {
+                    child.Path = $"{node.Path}/{child.Name}";
+                }
+
+                RebuildDescendantPaths(child);
             }
         }
 

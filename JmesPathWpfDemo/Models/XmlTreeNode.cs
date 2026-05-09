@@ -105,6 +105,7 @@ namespace JmesPathWpfDemo.Models
 
         public bool HasChildren => Children != null && Children.Count > 0;
         public bool HasAttributes => Attributes != null && Attributes.Count > 0;
+        public bool CanCreateTab => IsArrayNode || (Parent != null && Parent.IsArrayNode);
 
         /// <summary>
         /// True if this node is a virtual array grouping node.

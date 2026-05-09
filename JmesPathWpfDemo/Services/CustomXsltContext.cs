@@ -14,6 +14,10 @@ namespace JmesPathWpfDemo.Services
             {
                 return new StringJoinFunction();
             }
+         if (name == "joinquery")
+            {
+                return new JoinQueryPipelineFunction();
+            }
             if (name == "sort")
             {
                 return new SortFunction();
@@ -88,6 +92,85 @@ namespace JmesPathWpfDemo.Services
             }
 
             return string.Join(sep, values);
+        }
+    }
+
+    public class JoinQueryPipelineFunction : IXsltContextFunction
+    {
+        public int Minargs => 2;
+        public int Maxargs => 3;
+
+        public XPathResultType ReturnType => XPathResultType.String;
+
+        public XPathResultType[] ArgTypes => new[] { XPathResultType.NodeSet, XPathResultType.String, XPathResultType.String };
+
+        public object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
+        {
+            if (args == null || args.Length < 2)
+            {
+                return string.Empty;
+            }
+
+            if (args[0] is not XPathNodeIterator iterator)
+            {
+                return string.Empty;
+            }
+
+            var query = args[1]?.ToString();
+            var separator = args.Length > 2 && args[2] != null ? args[2].ToString() : ",";
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return string.Empty;
+            }
+
+            var values = new List<string>();
+            while (iterator.MoveNext())
+            {
+                var current = iterator.Current?.Clone();
+                if (current == null)
+                {
+                    continue;
+                }
+
+                var value = EvaluateQuery(xsltContext, current, query);
+                if (!string.IsNullOrEmpty(value))
+                {
+                    values.Add(value);
+                }
+            }
+
+            return string.Join(separator, values);
+        }
+
+        private string EvaluateQuery(XsltContext xsltContext, XPathNavigator navigator, string query)
+        {
+            try
+            {
+                var expression = navigator.Compile(query);
+                expression.SetContext(xsltContext);
+                var result = navigator.Evaluate(expression);
+
+                if (result is XPathNodeIterator nodeIterator)
+                {
+                    var parts = new List<string>();
+                    while (nodeIterator.MoveNext())
+                    {
+                        parts.Add(nodeIterator.Current?.Value ?? string.Empty);
+                    }
+                    return string.Join(string.Empty, parts);
+                }
+
+                if (result is XPathNavigator resultNavigator)
+                {
+                    return resultNavigator.Value;
+                }
+
+                return result?.ToString() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
     }
 

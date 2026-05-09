@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 
 namespace JmesPathWpfDemo.ViewModels
@@ -13,10 +14,14 @@ namespace JmesPathWpfDemo.ViewModels
         private const string SavedQueriesFileName = "saved_queries.json";
         private ObservableCollection<SavedQuery> _savedQueries;
         private readonly Action<string> _onQuerySelected;
+        private readonly string _savedQueriesFileName;
+        private readonly List<SavedQuery> _defaultQueries;
 
-        public QueryStoreViewModel(Action<string> onQuerySelected)
+      public QueryStoreViewModel(Action<string> onQuerySelected, string savedQueriesFileName = SavedQueriesFileName, IEnumerable<SavedQuery> defaultQueries = null)
         {
             _onQuerySelected = onQuerySelected;
+         _savedQueriesFileName = string.IsNullOrWhiteSpace(savedQueriesFileName) ? SavedQueriesFileName : savedQueriesFileName;
+            _defaultQueries = defaultQueries?.ToList() ?? CreateDefaultQueries();
             LoadSavedQueries();
         }
 
@@ -66,9 +71,9 @@ namespace JmesPathWpfDemo.ViewModels
         {
             try
             {
-                if (File.Exists(SavedQueriesFileName))
+              if (File.Exists(_savedQueriesFileName))
                 {
-                    var json = File.ReadAllText(SavedQueriesFileName);
+                  var json = File.ReadAllText(_savedQueriesFileName);
                     var queries = System.Text.Json.JsonSerializer.Deserialize<List<SavedQuery>>(json);
                     if (queries != null)
                     {
@@ -83,19 +88,12 @@ namespace JmesPathWpfDemo.ViewModels
             }
 
             // Fallback to defaults if load failed or file doesn't exist
-            SavedQueries = new ObservableCollection<SavedQuery>();
-            SavedQueries.Add(new SavedQuery 
-            { 
-                Name = "All Fields", 
-                Description = "Selects all user defined fields", 
-                Expression = "UserDefinedFields" 
-            });
-            SavedQueries.Add(new SavedQuery 
-            { 
-                Name = "High Priority", 
-                Description = "Filters for high priority items", 
-                Expression = "[?Priority == 'High']" 
-            });
+          SavedQueries = new ObservableCollection<SavedQuery>(_defaultQueries.Select(q => new SavedQuery
+            {
+                Name = q.Name,
+                Description = q.Description,
+                Expression = q.Expression
+            }));
         }
 
         private void SaveSavedQueries()
@@ -104,13 +102,32 @@ namespace JmesPathWpfDemo.ViewModels
             {
                 var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
                 var json = System.Text.Json.JsonSerializer.Serialize(SavedQueries, options);
-                File.WriteAllText(SavedQueriesFileName, json);
+              File.WriteAllText(_savedQueriesFileName, json);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error saving queries: {ex.Message}", "Error", 
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private static List<SavedQuery> CreateDefaultQueries()
+        {
+            return new List<SavedQuery>
+            {
+                new SavedQuery
+                {
+                    Name = "All Fields",
+                    Description = "Selects all user defined fields",
+                    Expression = "UserDefinedFields"
+                },
+                new SavedQuery
+                {
+                    Name = "High Priority",
+                    Description = "Filters for high priority items",
+                    Expression = "[?Priority == 'High']"
+                }
+            };
         }
     }
 }
